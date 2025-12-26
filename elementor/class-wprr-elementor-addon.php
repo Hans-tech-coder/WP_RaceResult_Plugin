@@ -33,24 +33,7 @@ class WPRR_Elementor_Addon
      */
     private function get_events_distances()
     {
-        global $wpdb;
-        $table_events = $wpdb->prefix . 'race_events';
-
-        // Check if table exists to avoid errors
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_events'") != $table_events) {
-            return [];
-        }
-
-        $results = $wpdb->get_results("SELECT id, distance_categories FROM $table_events");
-
-        $map = [];
-        if ($results) {
-            foreach ($results as $event) {
-                // Return raw string; JS will split it
-                $map[$event->id] = $event->distance_categories;
-            }
-        }
-        return $map;
+        return WPRR_DB::get_events_distances_map();
     }
 
     public function register_category($elements_manager)

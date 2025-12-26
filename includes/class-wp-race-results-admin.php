@@ -527,20 +527,9 @@ class WP_Race_Results_Admin
                             if (empty($distance))
                                 continue;
 
-                            // Fetch existing rules
-                            $male_rule = $wpdb->get_var($wpdb->prepare(
-                                "SELECT declared_winners FROM $rules_table WHERE event_id = %d AND distance = %s AND gender = 'male'",
-                                $event->id,
-                                $distance
-                            ));
-                            $female_rule = $wpdb->get_var($wpdb->prepare(
-                                "SELECT declared_winners FROM $rules_table WHERE event_id = %d AND distance = %s AND gender = 'female'",
-                                $event->id,
-                                $distance
-                            ));
-
-                            $male_val = !is_null($male_rule) ? (int) $male_rule : 3;
-                            $female_val = !is_null($female_rule) ? (int) $female_rule : 3;
+                            // Fetch existing rules (Source of Truth)
+                            $male_val = WPRR_DB::get_declared_winners($event->id, $distance, 'male');
+                            $female_val = WPRR_DB::get_declared_winners($event->id, $distance, 'female');
                             ?>
                             <tr>
                                 <th scope="row"><strong><?php echo esc_html($distance); ?></strong></th>

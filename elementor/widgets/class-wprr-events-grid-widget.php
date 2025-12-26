@@ -447,21 +447,13 @@ class WPRR_Events_Grid_Widget extends \Elementor\Widget_Base
 
     protected function render()
     {
-        global $wpdb;
         $settings = $this->get_settings_for_display();
 
         $limit = absint($settings['number_of_events']);
-        $order_by = in_array($settings['order_by'], ['event_date', 'created_at']) ? $settings['order_by'] : 'event_date';
-        $order = in_array($settings['order'], ['ASC', 'DESC']) ? $settings['order'] : 'DESC';
+        $order_by = $settings['order_by'];
+        $order = $settings['order'];
 
-        $table_name = $wpdb->prefix . 'race_events';
-
-        $results = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM $table_name ORDER BY $order_by $order LIMIT %d",
-                $limit
-            )
-        );
+        $results = WPRR_DB::get_events($limit, $order_by, $order);
 
         if (!$results) {
             echo '<div>No events found.</div>';
