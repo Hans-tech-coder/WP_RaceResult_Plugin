@@ -415,8 +415,8 @@ class WPRR_Race_Winners_Widget extends Widget_Base
         $declared_female = WPRR_DB::get_declared_winners($event_id, $distance, 'female');
 
         // 2. Fetch PODIUM ONLY for widget card display (top 3)
-        $podium_male = WPRR_DB::get_race_results($event_id, $distance, 'm', 3);
-        $podium_female = WPRR_DB::get_race_results($event_id, $distance, 'f', 3);
+        $podium_male = WPRR_DB::get_race_results($event_id, $distance, 'Male', 3);
+        $podium_female = WPRR_DB::get_race_results($event_id, $distance, 'Female', 3);
 
         $highlight_count = absint($settings['highlight_count']);
 
@@ -535,7 +535,7 @@ class WPRR_Race_Winners_Widget extends Widget_Base
             'id' => $modal_id_male,
             'event_id' => $event_id,
             'distance' => $distance,
-            'gender' => 'm',
+            'gender' => 'Male',
             'event_name' => $event_name,
             'declared' => $declared_male
         ];
@@ -543,7 +543,7 @@ class WPRR_Race_Winners_Widget extends Widget_Base
             'id' => $modal_id_female,
             'event_id' => $event_id,
             'distance' => $distance,
-            'gender' => 'f',
+            'gender' => 'Female',
             'event_name' => $event_name,
             'declared' => $declared_female
         ];

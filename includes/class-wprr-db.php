@@ -17,7 +17,15 @@ class WPRR_DB
         $table_winner_rules = $wpdb->prefix . 'race_winner_rules';
 
         $clean_dist = str_replace(' ', '', $distance);
+
+        // FIX START: Normalize gender input (Convert 'm' -> 'male', 'f' -> 'female')
         $clean_gender = strtolower($gender);
+        if ($clean_gender === 'm') {
+            $clean_gender = 'male';
+        } elseif ($clean_gender === 'f') {
+            $clean_gender = 'female';
+        }
+        // FIX END
 
         $declared = $wpdb->get_var($wpdb->prepare(
             "SELECT declared_winners FROM $table_winner_rules 
@@ -29,11 +37,11 @@ class WPRR_DB
 
         // Use detailed logging to help diagnose issues
         if ($declared === null) {
-            error_log("[WPRR DB] Rule lookup FAILED for Event $event_id, Dist '$distance', Gender '$gender'. Defaulting to " . WPRR_DEFAULT_WINNERS . ".");
+            // Debugging log only
+            error_log("[WPRR DB] Rule lookup FAILED for Event $event_id, Dist '$distance', Gender '$gender' (Normalized: $clean_gender). Defaulting to " . WPRR_DEFAULT_WINNERS . ".");
             return WPRR_DEFAULT_WINNERS;
         }
 
-        error_log("[WPRR DB] Rule FOUND for Event $event_id, Dist '$distance', Gender '$gender'. Declared: $declared");
         return (int) $declared;
     }
 

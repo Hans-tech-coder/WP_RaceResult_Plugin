@@ -1,3 +1,7 @@
+/* ========================================
+   WP Race Results - Modern Luxury Modal Styles
+   ======================================== */
+
 /* Modal Base Styles */
 .wprr-modal {
     position: fixed;
@@ -21,63 +25,110 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .wprr-modal-content {
     position: relative;
-    background: #fff;
+    background: #ffffff;
     width: 90%;
     max-width: 800px;
     max-height: 85vh;
-    border-radius: 12px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    /* Luxury shadow: soft, diffused, multi-layered */
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        0 10px 20px -5px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: wprrModalFadeIn 0.3s ease;
+    animation: wprrModalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes wprrModalFadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
+/* Modal Header */
 .wprr-modal-header {
-    padding: 20px 25px;
-    border-bottom: 1px solid #eee;
+    padding: 24px 28px;
+    border-bottom: 1px solid #e8eaed;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #fdfdfd;
+    background: #fafbfc;
 }
 
 .wprr-modal-header h2 {
     margin: 0;
     font-size: 1.5rem;
-    color: #333;
+    font-weight: 600;
+    color: #1a1a1a;
+    letter-spacing: -0.01em;
 }
 
+/* Modern Circular Close Button */
 .wprr-modal-close {
-    background: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f2f5;
     border: none;
-    font-size: 2rem;
-    cursor: pointer;
+    border-radius: 50%;
+    font-size: 1.5rem;
     line-height: 1;
-    color: #999;
-    transition: color 0.2s;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
+    flex-shrink: 0;
 }
 
 .wprr-modal-close:hover {
-    color: #ff4d4d;
+    background: #d4d7dc;
+    transform: rotate(90deg);
 }
 
+.wprr-modal-close:active {
+    transform: rotate(90deg) scale(0.95);
+}
+
+/* Modal Body */
 .wprr-modal-body {
-    padding: 25px;
+    padding: 28px;
     overflow-y: auto;
     flex: 1;
+}
+
+/* Custom Scrollbar (Webkit) */
+.wprr-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.wprr-modal-body::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+.wprr-modal-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.wprr-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 /* Loading State */
@@ -88,34 +139,52 @@
     color: #666;
 }
 
-/* Table Styles */
+/* Table Styles - Luxury Edition */
 .wprr-modal-scroll-area {
     width: 100%;
 }
 
 .wprr-modal-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin-top: 10px;
+    border: 1px solid #e8eaed;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .wprr-modal-table th,
 .wprr-modal-table td {
-    padding: 12px 15px;
+    padding: 14px 16px;
     text-align: left;
-    border-bottom: 1px solid #f0f0f0;
 }
 
 .wprr-modal-table th {
-    background: #f9f9f9;
+    background: #f8f9fa;
     font-weight: 600;
-    color: #555;
+    color: #666;
     text-transform: uppercase;
-    font-size: 0.85rem;
+    font-size: 12px;
     letter-spacing: 0.05em;
+    border-bottom: 1px solid #e8eaed;
 }
 
-.wprr-modal-table tr:last-child td {
+.wprr-modal-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.15s ease;
+}
+
+.wprr-modal-table tbody tr:hover {
+    background-color: #fafafa;
+}
+
+/* Ensure last row has border (enclosed look) */
+.wprr-modal-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.wprr-modal-table tbody tr:last-child td {
     border-bottom: none;
 }
 
@@ -126,15 +195,37 @@
         height: 100%;
         max-height: 100%;
         border-radius: 0;
+        box-shadow: none;
+    }
+
+    .wprr-modal-header {
+        padding: 20px;
     }
 
     .wprr-modal-body {
-        padding: 15px;
+        padding: 20px;
     }
 
     .wprr-modal-table th,
     .wprr-modal-table td {
-        padding: 10px;
+        padding: 12px;
         font-size: 0.9rem;
+    }
+
+    .wprr-modal-table th {
+        font-size: 11px;
+    }
+
+    .wprr-modal-close {
+        width: 28px;
+        height: 28px;
+        font-size: 1.25rem;
+    }
+}
+
+/* Tablet Breakpoint */
+@media (max-width: 768px) and (min-width: 601px) {
+    .wprr-modal-content {
+        max-width: 95%;
     }
 }
