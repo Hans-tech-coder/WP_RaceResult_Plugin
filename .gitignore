@@ -1,0 +1,12 @@
+# WordPress Plugin Ignore
+.DS_Store
+Thumbs.db
+node_modules/
+dist/
+*.log
+.git/
+.gemini/
+brain/
+implementation_plan.md
+task.md
+walkthrough.md
