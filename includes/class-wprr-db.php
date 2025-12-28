@@ -161,4 +161,36 @@ class WPRR_DB
         }
         return $map;
     }
+
+    /**
+     * Get a single event by ID.
+     *
+     * @param int $event_id The event ID.
+     * @return object|null The event object or null if not found.
+     */
+    public static function get_event_by_id($event_id)
+    {
+        global $wpdb;
+        $table_events = $wpdb->prefix . 'race_events';
+
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_events WHERE id = %d", absint($event_id)));
+    }
+
+    /**
+     * Get a single event by slug.
+     *
+     * @param string $slug The event slug.
+     * @return object|null The event object or null if not found.
+     */
+    public static function get_event_by_slug($slug)
+    {
+        global $wpdb;
+        $table_events = $wpdb->prefix . 'race_events';
+
+        if (empty($slug)) {
+            return null;
+        }
+
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_events WHERE slug = %s", sanitize_text_field($slug)));
+    }
 }

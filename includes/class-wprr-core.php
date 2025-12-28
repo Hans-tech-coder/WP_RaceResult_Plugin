@@ -53,6 +53,8 @@ class WPRR_Core
     private function init_hooks()
     {
         add_action('wp_enqueue_scripts', [$this, 'enqueue_public_assets']);
+        add_action('init', [$this, 'add_rewrite_rules']);
+        add_filter('query_vars', [$this, 'register_query_vars']);
     }
 
     public function enqueue_public_assets()
@@ -76,5 +78,45 @@ class WPRR_Core
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('wprr_modal_nonce')
         ]);
+    }
+
+    /**
+     * Register custom query vars.
+     *
+     * @param array $vars Existing query vars.
+     * @return array Modified query vars.
+     */
+    public function register_query_vars($vars)
+    {
+        $vars[] = 'event_slug';
+        return $vars;
+    }
+
+    /**
+     * Add rewrite rules for pretty event URLs.
+     */
+    public function add_rewrite_rules()
+    {
+        $master_page_id = get_option('wprr_master_page_id', 0);
+        $permalink_base = get_option('wprr_permalink_base', 'race');
+
+        // Only add rewrite rules if both settings are configured
+        if ($master_page_id > 0 && !empty($permalink_base)) {
+            // Sanitize the permalink base
+            $permalink_base = sanitize_title($permalink_base);
+            
+            // Add rewrite rule: {base}/{slug} -> index.php?page_id={master_id}&event_slug={slug}
+            add_rewrite_rule(
+                '^' . $permalink_base . '/([^/]*)/?$',
+                'index.php?page_id=' . absint($master_page_id) . '&event_slug=$matches[1]',
+                'top'
+            );
+
+            // Flush rewrite rules if needed (only when settings were just changed)
+            if (get_option('wprr_rewrite_rules_flushed') !== 'yes') {
+                flush_rewrite_rules(false);
+                update_option('wprr_rewrite_rules_flushed', 'yes');
+            }
+        }
     }
 }

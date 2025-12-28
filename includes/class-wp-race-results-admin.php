@@ -176,6 +176,16 @@ class WP_Race_Results_Admin
             array($this, 'display_plugin_import_page')
         );
 
+        // Add submenu page (Settings).
+        add_submenu_page(
+            'wp_race_results',
+            'Race Results Settings', // Page title
+            'Settings', // Menu title
+            'manage_options',
+            'wp_race_results_settings',
+            array($this, 'display_plugin_settings_page')
+        );
+
     }
 
     /**
@@ -217,6 +227,30 @@ class WP_Race_Results_Admin
      */
     public function handle_form_submissions()
     {
+        // Check if we are handling a settings save.
+        if (isset($_POST['wp_race_save_settings'])) {
+            if (!isset($_POST['wp_race_settings_nonce']) || !wp_verify_nonce($_POST['wp_race_settings_nonce'], 'wp_race_save_settings')) {
+                wp_die('Security check failed');
+            }
+
+            // Save Master Results Page
+            $master_page_id = isset($_POST['wprr_master_page_id']) ? absint($_POST['wprr_master_page_id']) : 0;
+            update_option('wprr_master_page_id', $master_page_id);
+
+            // Save Permalink Base
+            $permalink_base = isset($_POST['wprr_permalink_base']) ? sanitize_title($_POST['wprr_permalink_base']) : 'race';
+            if (empty($permalink_base)) {
+                $permalink_base = 'race';
+            }
+            update_option('wprr_permalink_base', $permalink_base);
+
+            // Mark that rewrite rules need to be flushed
+            delete_option('wprr_rewrite_rules_flushed');
+
+            wp_redirect(admin_url('admin.php?page=wp_race_results_settings&settings-updated=true'));
+            exit;
+        }
+
         // Check if we are handling an event save.
         if (isset($_POST['wp_race_save_event'])) {
             if (!isset($_POST['wp_race_event_nonce']) || !wp_verify_nonce($_POST['wp_race_event_nonce'], 'wp_race_save_event')) {
@@ -230,15 +264,53 @@ class WP_Race_Results_Admin
             $event_date = sanitize_text_field($_POST['event_date']);
             $location = sanitize_text_field($_POST['location']);
             $banner_image = sanitize_text_field($_POST['banner_image']);
-            $results_page_id = isset($_POST['results_page_id']) ? absint($_POST['results_page_id']) : 0;
+            $event_logo = isset($_POST['event_logo']) ? esc_url_raw($_POST['event_logo']) : '';
+
+            // Handle slug generation and uniqueness
+            $posted_slug = isset($_POST['slug']) ? trim($_POST['slug']) : '';
+            if (empty($posted_slug)) {
+                // Auto-generate from event name
+                $slug = sanitize_title($event_name);
+            } else {
+                // Use provided slug
+                $slug = sanitize_title($posted_slug);
+            }
+
+            // Ensure slug is unique
+            $current_event_id = isset($_POST['event_id']) ? absint($_POST['event_id']) : 0;
+            $original_slug = $slug;
+            $counter = 1;
+            while (true) {
+                $existing = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM $table_name WHERE slug = %s AND id != %d",
+                    $slug,
+                    $current_event_id
+                ));
+                if (!$existing) {
+                    break; // Slug is unique
+                }
+                // Append number to make it unique
+                $slug = $original_slug . '-' . $counter;
+                $counter++;
+            }
+
+            // Collect and encode social media links
+            $social_links = array(
+                'facebook' => isset($_POST['social_facebook']) ? esc_url_raw($_POST['social_facebook']) : '',
+                'instagram' => isset($_POST['social_instagram']) ? esc_url_raw($_POST['social_instagram']) : '',
+                'website' => isset($_POST['social_website']) ? esc_url_raw($_POST['social_website']) : '',
+            );
+            $social_media_links = json_encode($social_links);
 
             $data = array(
                 'event_name' => $event_name,
+                'slug' => $slug,
                 'event_date' => $event_date,
                 'location' => $location,
                 'banner_image' => $banner_image,
+                'event_logo' => $event_logo,
+                'social_media_links' => $social_media_links,
                 'distance_categories' => sanitize_text_field($_POST['distance_categories']),
-                'results_page_id' => $results_page_id,
             );
 
             if (!empty($_POST['event_id'])) {
@@ -482,6 +554,15 @@ class WP_Race_Results_Admin
                         </td>
                     </tr>
                     <tr>
+                        <th scope="row"><label for="slug">Event Slug</label></th>
+                        <td>
+                            <input name="slug" type="text" id="slug"
+                                value="<?php echo esc_attr($event ? $event->slug : ''); ?>" class="regular-text"
+                                placeholder="Auto-generated from Event Name">
+                            <p class="description">The URL-friendly version of the name (e.g., tarlac-marathon). Leave empty to auto-generate from Event Name.</p>
+                        </td>
+                    </tr>
+                    <tr>
                         <th scope="row"><label for="event_date">Event Date</label></th>
                         <td><input name="event_date" type="date" id="event_date"
                                 value="<?php echo esc_attr($event ? $event->event_date : ''); ?>" class="regular-text"></td>
@@ -516,26 +597,51 @@ class WP_Race_Results_Admin
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><label for="results_page_id">Results Page</label></th>
+                        <th scope="row"><label for="event_logo">Event Logo</label></th>
+                        <td>
+                            <input name="event_logo" type="hidden" id="event_logo"
+                                value="<?php echo esc_attr($event ? $event->event_logo : ''); ?>">
+                            <input type="button" id="upload_event_logo_button" class="button" value="Upload / Select Logo">
+                            <br>
+                            <?php
+                            $logo_url = $event ? $event->event_logo : '';
+                            $logo_display = $logo_url ? 'block' : 'none';
+                            ?>
+                            <img id="event_logo_preview" src="<?php echo esc_url($logo_url); ?>"
+                                style="max-width:300px; margin-top:10px; display:<?php echo esc_attr($logo_display); ?>;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label>Social Media Links</label></th>
                         <td>
                             <?php
-                            // Fetch all published pages
-                            $pages = get_pages(array(
-                                'sort_column' => 'post_title',
-                                'sort_order' => 'ASC',
-                                'post_status' => 'publish'
-                            ));
-                            $current_page_id = $event ? $event->results_page_id : 0;
+                            // Decode social media links from JSON
+                            $social_links = array('facebook' => '', 'instagram' => '', 'website' => '');
+                            if ($event && !empty($event->social_media_links)) {
+                                $decoded = json_decode($event->social_media_links, true);
+                                if (is_array($decoded)) {
+                                    $social_links = array_merge($social_links, $decoded);
+                                }
+                            }
                             ?>
-                            <select name="results_page_id" id="results_page_id" class="regular-text">
-                                <option value="0" <?php selected($current_page_id, 0); ?>>— Select Page —</option>
-                                <?php foreach ($pages as $page): ?>
-                                    <option value="<?php echo esc_attr($page->ID); ?>" <?php selected($current_page_id, $page->ID); ?>>
-                                        <?php echo esc_html($page->post_title); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <p class="description">Select the WordPress page where race results will be displayed.</p>
+                            <label for="social_facebook" style="display: block; margin-bottom: 8px;">
+                                <strong>Facebook URL:</strong><br>
+                                <input name="social_facebook" type="url" id="social_facebook"
+                                    value="<?php echo esc_attr($social_links['facebook']); ?>" class="regular-text"
+                                    placeholder="https://facebook.com/your-page">
+                            </label>
+                            <label for="social_instagram" style="display: block; margin-bottom: 8px;">
+                                <strong>Instagram URL:</strong><br>
+                                <input name="social_instagram" type="url" id="social_instagram"
+                                    value="<?php echo esc_attr($social_links['instagram']); ?>" class="regular-text"
+                                    placeholder="https://instagram.com/your-page">
+                            </label>
+                            <label for="social_website" style="display: block; margin-bottom: 8px;">
+                                <strong>Website URL:</strong><br>
+                                <input name="social_website" type="url" id="social_website"
+                                    value="<?php echo esc_attr($social_links['website']); ?>" class="regular-text"
+                                    placeholder="https://your-website.com">
+                            </label>
                         </td>
                     </tr>
                 </table>
@@ -951,6 +1057,68 @@ class WP_Race_Results_Admin
                     <?php submit_button('Import Results'); ?>
                 </form>
             </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render the settings page.
+     *
+     * @since 1.0.0
+     */
+    public function display_plugin_settings_page()
+    {
+        // Get current settings
+        $master_page_id = get_option('wprr_master_page_id', 0);
+        $permalink_base = get_option('wprr_permalink_base', 'race');
+
+        // Show success message if settings were saved
+        if (isset($_GET['settings-updated']) && $_GET['settings-updated'] === 'true') {
+            echo '<div class="notice notice-success is-dismissible"><p>Settings saved successfully. Don\'t forget to flush rewrite rules by visiting Settings > Permalinks and clicking "Save Changes".</p></div>';
+        }
+        ?>
+        <div class="wrap">
+            <h2><?php echo esc_html(get_admin_page_title()); ?></h2>
+            <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=wp_race_results_settings')); ?>">
+                <?php wp_nonce_field('wp_race_save_settings', 'wp_race_settings_nonce'); ?>
+                <input type="hidden" name="wp_race_save_settings" value="1">
+
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="wprr_master_page_id">Master Results Page</label></th>
+                        <td>
+                            <?php
+                            // Fetch all published pages
+                            $pages = get_pages(array(
+                                'sort_column' => 'post_title',
+                                'sort_order' => 'ASC',
+                                'post_status' => 'publish'
+                            ));
+                            ?>
+                            <select name="wprr_master_page_id" id="wprr_master_page_id" class="regular-text">
+                                <option value="0" <?php selected($master_page_id, 0); ?>>— Select Page —</option>
+                                <?php foreach ($pages as $page): ?>
+                                    <option value="<?php echo esc_attr($page->ID); ?>" <?php selected($master_page_id, $page->ID); ?>>
+                                        <?php echo esc_html($page->post_title); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">Select the WordPress page that will serve as the master template for dynamic event pages. This page should be built with Elementor and contain the Event Dynamic Header widget.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="wprr_permalink_base">Event URL Base</label></th>
+                        <td>
+                            <input name="wprr_permalink_base" type="text" id="wprr_permalink_base"
+                                value="<?php echo esc_attr($permalink_base); ?>" class="regular-text"
+                                placeholder="race">
+                            <p class="description">The URL base for event pages. For example, if set to "race", event URLs will be: <code><?php echo esc_html(home_url('/race/event-slug')); ?></code></p>
+                        </td>
+                    </tr>
+                </table>
+
+                <?php submit_button('Save Settings'); ?>
+            </form>
         </div>
         <?php
     }

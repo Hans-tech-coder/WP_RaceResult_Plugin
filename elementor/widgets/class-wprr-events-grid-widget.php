@@ -699,6 +699,9 @@ class WPRR_Events_Grid_Widget extends \Elementor\Widget_Base
         $order = $settings['order'];
         $button_text = !empty($settings['button_text']) ? $settings['button_text'] : 'View Results';
 
+        // Get permalink base from global settings
+        $permalink_base = get_option('wprr_permalink_base', 'race');
+
         $results = WPRR_DB::get_events($limit, $order_by, $order);
 
         if (!$results) {
@@ -747,16 +750,19 @@ class WPRR_Events_Grid_Widget extends \Elementor\Widget_Base
                 }
             }
 
-            // View Results Button
-            if (!empty($event->results_page_id) && absint($event->results_page_id) > 0) {
-                $results_url = get_permalink(absint($event->results_page_id));
-                if ($results_url) {
-                    echo '<div class="wprr-button-wrapper ' . esc_attr($button_width_class) . '">';
-                    echo '<a href="' . esc_url($results_url) . '" class="wprr-view-results-btn" style="display: inline-block; text-decoration: none; transition: all 0.3s ease;">';
-                    echo esc_html($button_text);
-                    echo '</a>';
-                    echo '</div>';
-                }
+            // View Results Button - Using Pretty URLs
+            // Get event slug, fallback to sanitized event name if slug is empty
+            $event_slug = !empty($event->slug) ? $event->slug : sanitize_title($event->event_name);
+            
+            if (!empty($event_slug)) {
+                // Construct pretty URL: /{base}/{slug}/
+                $event_url = home_url('/' . $permalink_base . '/' . $event_slug . '/');
+                
+                echo '<div class="wprr-button-wrapper ' . esc_attr($button_width_class) . '">';
+                echo '<a href="' . esc_url($event_url) . '" class="wprr-view-results-btn" style="display: inline-block; text-decoration: none; transition: all 0.3s ease;">';
+                echo esc_html($button_text);
+                echo '</a>';
+                echo '</div>';
             }
 
             echo '</div>'; // .wprr-event-card

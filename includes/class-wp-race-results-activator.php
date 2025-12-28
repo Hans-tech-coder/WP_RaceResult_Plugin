@@ -40,9 +40,12 @@ class WP_Race_Results_Activator
 		$sql_events = "CREATE TABLE $table_events (
 			id bigint(20) NOT NULL AUTO_INCREMENT,
 			event_name varchar(255) NOT NULL,
+			slug varchar(255) DEFAULT NULL,
 			event_date date DEFAULT NULL,
 			location varchar(255) DEFAULT NULL,
 			banner_image varchar(255) DEFAULT NULL,
+			event_logo varchar(255) DEFAULT NULL,
+			social_media_links longtext DEFAULT NULL,
 			distance_categories varchar(255) DEFAULT '',
 			results_page_id bigint(20) DEFAULT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP,
