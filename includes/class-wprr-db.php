@@ -133,6 +133,20 @@ class WPRR_DB
     }
 
     /**
+     * Get distinct distances for a specific event from the results table.
+     *
+     * @param int $event_id The event ID.
+     * @return array List of distinct distances.
+     */
+    public static function get_distances_for_event($event_id)
+    {
+        global $wpdb;
+        $table_results = $wpdb->prefix . 'race_results';
+
+        return $wpdb->get_col($wpdb->prepare("SELECT DISTINCT distance FROM $table_results WHERE event_id = %d", absint($event_id)));
+    }
+
+    /**
      * Get a single event name by ID.
      */
     public static function get_event_name($event_id)
@@ -192,5 +206,102 @@ class WPRR_DB
         }
 
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_events WHERE slug = %s", sanitize_text_field($slug)));
+    }
+
+    /**
+     * Get results for table display with filtering and pagination.
+     *
+     * @param int $event_id The event ID.
+     * @param string $category The distance category.
+     * @param string $gender Optional gender filter (Male/Female).
+     * @param string $search Optional search term (searches name and bib_number).
+     * @param int $limit Number of results per page.
+     * @param int $offset Offset for pagination.
+     * @return array Array of result objects.
+     */
+    public static function get_results_for_table($event_id, $category, $gender = '', $search = '', $limit = 20, $offset = 0)
+    {
+        global $wpdb;
+        $table_results = $wpdb->prefix . 'race_results';
+
+        $clean_dist = str_replace(' ', '', $category);
+
+        // Build WHERE clause
+        $where = "WHERE event_id = %d AND REPLACE(distance, ' ', '') = %s";
+        $params = [absint($event_id), $clean_dist];
+
+        // Add gender filter if provided
+        if (!empty($gender)) {
+            $clean_gender = strtolower($gender);
+            if ($clean_gender === 'm' || $clean_gender === 'male') {
+                $where .= " AND LOWER(gender) IN ('m', 'male')";
+            } elseif ($clean_gender === 'f' || $clean_gender === 'female') {
+                $where .= " AND LOWER(gender) IN ('f', 'female')";
+            }
+        }
+
+        // Add search filter if provided
+        if (!empty($search)) {
+            $where .= " AND (full_name LIKE %s OR bib_number LIKE %s)";
+            $search_term = '%' . $wpdb->esc_like($search) . '%';
+            $params[] = $search_term;
+            $params[] = $search_term;
+        }
+
+        // Build query with ORDER BY duration (chip_time) ASC
+        $query = "SELECT rank_overall, rank_gender, bib_number, full_name, gender, chip_time, gun_time
+                  FROM $table_results
+                  $where
+                  ORDER BY chip_time ASC, rank_overall ASC
+                  LIMIT %d OFFSET %d";
+
+        $params[] = absint($limit);
+        $params[] = absint($offset);
+
+        return $wpdb->get_results($wpdb->prepare($query, ...$params));
+    }
+
+    /**
+     * Count total results for table pagination.
+     *
+     * @param int $event_id The event ID.
+     * @param string $category The distance category.
+     * @param string $gender Optional gender filter.
+     * @param string $search Optional search term.
+     * @return int Total count of results.
+     */
+    public static function count_results_for_table($event_id, $category, $gender = '', $search = '')
+    {
+        global $wpdb;
+        $table_results = $wpdb->prefix . 'race_results';
+
+        $clean_dist = str_replace(' ', '', $category);
+
+        // Build WHERE clause (same logic as get_results_for_table)
+        $where = "WHERE event_id = %d AND REPLACE(distance, ' ', '') = %s";
+        $params = [absint($event_id), $clean_dist];
+
+        // Add gender filter if provided
+        if (!empty($gender)) {
+            $clean_gender = strtolower($gender);
+            if ($clean_gender === 'm' || $clean_gender === 'male') {
+                $where .= " AND LOWER(gender) IN ('m', 'male')";
+            } elseif ($clean_gender === 'f' || $clean_gender === 'female') {
+                $where .= " AND LOWER(gender) IN ('f', 'female')";
+            }
+        }
+
+        // Add search filter if provided
+        if (!empty($search)) {
+            $where .= " AND (full_name LIKE %s OR bib_number LIKE %s)";
+            $search_term = '%' . $wpdb->esc_like($search) . '%';
+            $params[] = $search_term;
+            $params[] = $search_term;
+        }
+
+        // Count query
+        $query = "SELECT COUNT(*) FROM $table_results $where";
+
+        return (int) $wpdb->get_var($wpdb->prepare($query, ...$params));
     }
 }

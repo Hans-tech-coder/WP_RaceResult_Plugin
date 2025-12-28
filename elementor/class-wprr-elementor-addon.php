@@ -56,9 +56,11 @@ class WPRR_Elementor_Addon
         require_once(__DIR__ . '/widgets/class-wprr-events-grid-widget.php');
         require_once(__DIR__ . '/widgets/class-wprr-race-winners-widget.php');
         require_once(__DIR__ . '/widgets/class-wprr-event-header-widget.php');
+        require_once(__DIR__ . '/widgets/class-wprr-full-results-table-widget.php');
 
         $widgets_manager->register(new \WPRR_Events_Grid_Widget());
         $widgets_manager->register(new \WPRR_Race_Winners_Widget());
         $widgets_manager->register(new \WPRR_Event_Header_Widget());
+        $widgets_manager->register(new \WPRR_Full_Results_Table_Widget());
     }
 }

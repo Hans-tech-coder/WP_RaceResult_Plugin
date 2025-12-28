@@ -121,8 +121,25 @@ class WP_Race_Results_Admin
     public function init()
     {
         add_action('admin_menu', array($this, 'add_plugin_admin_menu'));
+        add_action('admin_init', array($this, 'register_admin_settings'));
         add_action('admin_init', array($this, 'handle_form_submissions'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
+    }
+
+    /**
+     * Register Admin settings.
+     *
+     * @since 1.0.0
+     */
+    public function register_admin_settings()
+    {
+        register_setting('wprr_settings_group', 'wprr_master_page_id', ['type' => 'integer', 'sanitize_callback' => 'absint']);
+        register_setting('wprr_settings_group', 'wprr_permalink_base', ['type' => 'string', 'sanitize_callback' => 'sanitize_title']);
+
+        // When settings are saved, flush rewrite rules
+        if (isset($_GET['settings-updated']) && $_GET['settings-updated']) {
+            flush_rewrite_rules();
+        }
     }
 
     /**
@@ -179,11 +196,11 @@ class WP_Race_Results_Admin
         // Add submenu page (Settings).
         add_submenu_page(
             'wp_race_results',
-            'Race Results Settings', // Page title
+            'Settings', // Page title
             'Settings', // Menu title
             'manage_options',
-            'wp_race_results_settings',
-            array($this, 'display_plugin_settings_page')
+            'wprr_settings',
+            array($this, 'render_settings_page')
         );
 
     }
@@ -227,30 +244,6 @@ class WP_Race_Results_Admin
      */
     public function handle_form_submissions()
     {
-        // Check if we are handling a settings save.
-        if (isset($_POST['wp_race_save_settings'])) {
-            if (!isset($_POST['wp_race_settings_nonce']) || !wp_verify_nonce($_POST['wp_race_settings_nonce'], 'wp_race_save_settings')) {
-                wp_die('Security check failed');
-            }
-
-            // Save Master Results Page
-            $master_page_id = isset($_POST['wprr_master_page_id']) ? absint($_POST['wprr_master_page_id']) : 0;
-            update_option('wprr_master_page_id', $master_page_id);
-
-            // Save Permalink Base
-            $permalink_base = isset($_POST['wprr_permalink_base']) ? sanitize_title($_POST['wprr_permalink_base']) : 'race';
-            if (empty($permalink_base)) {
-                $permalink_base = 'race';
-            }
-            update_option('wprr_permalink_base', $permalink_base);
-
-            // Mark that rewrite rules need to be flushed
-            delete_option('wprr_rewrite_rules_flushed');
-
-            wp_redirect(admin_url('admin.php?page=wp_race_results_settings&settings-updated=true'));
-            exit;
-        }
-
         // Check if we are handling an event save.
         if (isset($_POST['wp_race_save_event'])) {
             if (!isset($_POST['wp_race_event_nonce']) || !wp_verify_nonce($_POST['wp_race_event_nonce'], 'wp_race_save_event')) {
@@ -556,10 +549,10 @@ class WP_Race_Results_Admin
                     <tr>
                         <th scope="row"><label for="slug">Event Slug</label></th>
                         <td>
-                            <input name="slug" type="text" id="slug"
-                                value="<?php echo esc_attr($event ? $event->slug : ''); ?>" class="regular-text"
-                                placeholder="Auto-generated from Event Name">
-                            <p class="description">The URL-friendly version of the name (e.g., tarlac-marathon). Leave empty to auto-generate from Event Name.</p>
+                            <input name="slug" type="text" id="slug" value="<?php echo esc_attr($event ? $event->slug : ''); ?>"
+                                class="regular-text" placeholder="Auto-generated from Event Name">
+                            <p class="description">The URL-friendly version of the name (e.g., tarlac-marathon). Leave empty to
+                                auto-generate from Event Name.</p>
                         </td>
                     </tr>
                     <tr>
@@ -1066,58 +1059,44 @@ class WP_Race_Results_Admin
      *
      * @since 1.0.0
      */
-    public function display_plugin_settings_page()
+    public function render_settings_page()
     {
-        // Get current settings
-        $master_page_id = get_option('wprr_master_page_id', 0);
-        $permalink_base = get_option('wprr_permalink_base', 'race');
-
-        // Show success message if settings were saved
-        if (isset($_GET['settings-updated']) && $_GET['settings-updated'] === 'true') {
-            echo '<div class="notice notice-success is-dismissible"><p>Settings saved successfully. Don\'t forget to flush rewrite rules by visiting Settings > Permalinks and clicking "Save Changes".</p></div>';
-        }
         ?>
         <div class="wrap">
-            <h2><?php echo esc_html(get_admin_page_title()); ?></h2>
-            <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=wp_race_results_settings')); ?>">
-                <?php wp_nonce_field('wp_race_save_settings', 'wp_race_settings_nonce'); ?>
-                <input type="hidden" name="wp_race_save_settings" value="1">
-
+            <h2>Race Results Settings</h2>
+            <?php settings_errors(); ?>
+            <form method="post" action="options.php">
+                <?php
+                settings_fields('wprr_settings_group');
+                ?>
                 <table class="form-table">
-                    <tr>
+                    <tr valign="top">
                         <th scope="row"><label for="wprr_master_page_id">Master Results Page</label></th>
                         <td>
                             <?php
-                            // Fetch all published pages
-                            $pages = get_pages(array(
-                                'sort_column' => 'post_title',
-                                'sort_order' => 'ASC',
-                                'post_status' => 'publish'
-                            ));
+                            $selected_page = get_option('wprr_master_page_id');
+                            wp_dropdown_pages([
+                                'name' => 'wprr_master_page_id',
+                                'selected' => $selected_page,
+                                'show_option_none' => '— Select a Page —',
+                                'option_none_value' => '0',
+                            ]);
                             ?>
-                            <select name="wprr_master_page_id" id="wprr_master_page_id" class="regular-text">
-                                <option value="0" <?php selected($master_page_id, 0); ?>>— Select Page —</option>
-                                <?php foreach ($pages as $page): ?>
-                                    <option value="<?php echo esc_attr($page->ID); ?>" <?php selected($master_page_id, $page->ID); ?>>
-                                        <?php echo esc_html($page->post_title); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <p class="description">Select the WordPress page that will serve as the master template for dynamic event pages. This page should be built with Elementor and contain the Event Dynamic Header widget.</p>
+                            <p class="description">This page will be used as the template for displaying race results.</p>
                         </td>
                     </tr>
-                    <tr>
-                        <th scope="row"><label for="wprr_permalink_base">Event URL Base</label></th>
+                    <tr valign="top">
+                        <th scope="row"><label for="wprr_permalink_base">URL Base</label></th>
                         <td>
-                            <input name="wprr_permalink_base" type="text" id="wprr_permalink_base"
-                                value="<?php echo esc_attr($permalink_base); ?>" class="regular-text"
-                                placeholder="race">
-                            <p class="description">The URL base for event pages. For example, if set to "race", event URLs will be: <code><?php echo esc_html(home_url('/race/event-slug')); ?></code></p>
+                            <input type="text" id="wprr_permalink_base" name="wprr_permalink_base"
+                                value="<?php echo esc_attr(get_option('wprr_permalink_base', 'results')); ?>"
+                                class="regular-text" />
+                            <p class="description">The base slug for your race results URLs. Example:
+                                /<strong>results</strong>/event-name/</p>
                         </td>
                     </tr>
                 </table>
-
-                <?php submit_button('Save Settings'); ?>
+                <?php submit_button(); ?>
             </form>
         </div>
         <?php

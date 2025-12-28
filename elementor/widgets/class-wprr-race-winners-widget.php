@@ -389,166 +389,249 @@ class WPRR_Race_Winners_Widget extends Widget_Base
 
     protected function render()
     {
+        // Hide widget when viewing full results table
+        if (!empty(get_query_var('wprr_distance'))) {
+            return;
+        }
+
         $settings = $this->get_settings_for_display();
-        $event_id = $settings['event_id'];
-        $distance = $settings['distance'];
+        $event = null;
+        $event_id = 0;
+        $event_name = '';
+        $distances = [];
 
-        if (empty($event_id)) {
+        // Step 1: Detect Event - Check URL params first, then fallback to manual settings
+        $event_slug = get_query_var('event_slug');
+        if (!empty($event_slug)) {
+            $event = WPRR_DB::get_event_by_slug($event_slug);
+        } elseif (isset($_GET['event_id']) && !empty($_GET['event_id'])) {
+            $event = WPRR_DB::get_event_by_id(absint($_GET['event_id']));
+        }
+
+        // If event found from URL, use it; otherwise use manual settings
+        if ($event) {
+            $event_id = absint($event->id);
+            $event_name = $event->event_name;
+            
+            // Step 2: Dynamic Mode - Get all distances from event
+            if (!empty($event->distance_categories)) {
+                $distances = array_map('trim', explode(',', $event->distance_categories));
+                $distances = array_filter($distances); // Remove empty values
+            }
+        } else {
+            // Step 2: Manual Mode - Use settings
+            $event_id = !empty($settings['event_id']) ? absint($settings['event_id']) : 0;
+            $distance = !empty($settings['distance']) ? $settings['distance'] : '';
+
+            if ($event_id) {
+                $event = WPRR_DB::get_event_by_id($event_id);
+            }
+            
+            if (empty($event_id) || !$event) {
+                if (\Elementor\Plugin::$instance->editor->is_edit_mode()) {
+                    echo '<div style="padding: 20px; background: #eee; text-align: center;">Please select an Event to display winners.</div>';
+                }
+                return;
+            }
+            $event_name = $event->event_name;
+
+            if (empty($distance)) {
+                if (\Elementor\Plugin::$instance->editor->is_edit_mode()) {
+                    echo '<div style="padding: 20px; background: #eee; text-align: center;">Please select a Distance to display winners.</div>';
+                }
+                return;
+            }
+            
+            // Use single distance as array for loop
+            $distances = [$distance];
+        }
+
+        // Sort distances in descending order (longest to shortest)
+        if (count($distances) > 1) {
+            usort($distances, function($a, $b) {
+                // Remove non-numeric characters (except decimal points) to get raw number
+                $val_a = (float) filter_var($a, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+                $val_b = (float) filter_var($b, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+                
+                // Sort Descending (Longest to Shortest)
+                return ($val_a < $val_b) ? 1 : -1;
+            });
+        }
+
+        // If no distances found, show message
+        if (empty($distances)) {
             if (\Elementor\Plugin::$instance->editor->is_edit_mode()) {
-                echo '<div style="padding: 20px; background: #eee; text-align: center;">Please select an Event to display winners.</div>';
+                echo '<div style="padding: 20px; background: #eee; text-align: center;">No distance categories found for this event.</div>';
             }
             return;
         }
-
-        if (empty($distance)) {
-            if (\Elementor\Plugin::$instance->editor->is_edit_mode()) {
-                echo '<div style="padding: 20px; background: #eee; text-align: center;">Please select a Distance to display winners.</div>';
-            }
-            return;
-        }
-
-        // Get Event Name for Modal Subtitle
-        $event_name = WPRR_DB::get_event_name($event_id);
-
-        // 1. Get Declared Winners Rules (Authoritative Source)
-        $declared_male = WPRR_DB::get_declared_winners($event_id, $distance, 'male');
-        $declared_female = WPRR_DB::get_declared_winners($event_id, $distance, 'female');
-
-        // 2. Fetch PODIUM ONLY for widget card display (top 3)
-        $podium_male = WPRR_DB::get_race_results($event_id, $distance, 'Male', 3);
-        $podium_female = WPRR_DB::get_race_results($event_id, $distance, 'Female', 3);
 
         $highlight_count = absint($settings['highlight_count']);
-
-        // Logic for Button
-        $remaining_male = max(0, $declared_male - $highlight_count);
-        $remaining_female = max(0, $declared_female - $highlight_count);
-
         $widget_id = $this->get_id();
-        $modal_id_male = "wprr-modal-{$widget_id}-male";
-        $modal_id_female = "wprr-modal-{$widget_id}-female";
+        $modal_args_collection = []; // Collect modals to render at the end
 
-        // DEBUG LOGS (For Admin/Development)
-        if (current_user_can('manage_options')) {
-            echo "<!-- WPRR DEBUG: \n";
-            echo "Category: " . esc_html($distance) . "\n";
-            echo "Male: Podium " . count($podium_male) . " (Declared: $declared_male, Remaining: $remaining_male)\n";
-            echo "Female: Podium " . count($podium_female) . " (Declared: $declared_female, Remaining: $remaining_female)\n";
-            echo "-->";
+        // Step 3: Loop through distances
+        foreach ($distances as $loop_index => $distance) {
+            $distance = trim($distance);
+            if (empty($distance)) {
+                continue;
+            }
+
+            // Sanitize distance for use in IDs and URL
+            $distance_slug = sanitize_title($distance);
+
+            // --- URL Generation for "View Results" button ---
+            $permalink_base = get_option('wprr_permalink_base', 'race');
+            $button_url = home_url('/' . $permalink_base . '/' . $event->slug . '/' . $distance_slug . '/');
+
+            // 1. Get Declared Winners Rules (Authoritative Source)
+            $declared_male = WPRR_DB::get_declared_winners($event_id, $distance, 'male');
+            $declared_female = WPRR_DB::get_declared_winners($event_id, $distance, 'female');
+
+            // 2. Fetch PODIUM ONLY for widget card display (top 3)
+            $podium_male = WPRR_DB::get_race_results($event_id, $distance, 'Male', 3);
+            $podium_female = WPRR_DB::get_race_results($event_id, $distance, 'Female', 3);
+
+            // Logic for Button
+            $remaining_male = max(0, $declared_male - $highlight_count);
+            $remaining_female = max(0, $declared_female - $highlight_count);
+
+            // Unique modal IDs per distance
+            $modal_id_male = "wprr-modal-{$widget_id}-{$distance_slug}-male";
+            $modal_id_female = "wprr-modal-{$widget_id}-{$distance_slug}-female";
+
+            // DEBUG LOGS (For Admin/Development)
+            if (current_user_can('manage_options')) {
+                echo "<!-- WPRR DEBUG: \n";
+                echo "Category: " . esc_html($distance) . "\n";
+                echo "Male: Podium " . count($podium_male) . " (Declared: $declared_male, Remaining: $remaining_male)\n";
+                echo "Female: Podium " . count($podium_female) . " (Declared: $declared_female, Remaining: $remaining_female)\n";
+                echo "-->";
+            }
+
+            ?>
+            <div class="wprr-distance-section wprr-winners-container" style="border: 1px solid #eee; padding: 20px; margin-bottom: 30px;">
+                <!-- DATA SOURCE: DECLARED WINNERS
+                     DECLARED MALE: <?php echo $declared_male; ?> (Podium: <?php echo count($podium_male); ?>)
+                     REMAINING MALE: <?php echo $remaining_male; ?>
+                     DECLARED FEMALE: <?php echo $declared_female; ?> (Podium: <?php echo count($podium_female); ?>)
+                     REMAINING FEMALE: <?php echo $remaining_female; ?>
+                -->
+
+                <!-- Header -->
+                <div class="wprr-winners-header"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;"><?php echo esc_html($distance); ?> Winners</h3>
+                    <?php
+                        $button_key = 'btn_' . $loop_index;
+                        $this->remove_render_attribute($button_key);
+                        $this->add_render_attribute($button_key, 'href', $button_url);
+                        $this->add_render_attribute($button_key, 'class', 'wprr-view-results-btn');
+                        $this->add_render_attribute($button_key, 'style', 'text-decoration: none; font-weight: bold;');
+                        
+                        echo '<a ' . $this->get_render_attribute_string($button_key) . '>View ' . esc_html($distance) . ' Results &rarr;</a>';
+                    ?>
+                </div>
+
+                <!-- Cards Grid -->
+                <div class="wprr-winners-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+                    <!-- Male Card -->
+                    <div class="wprr-winner-card"
+                        style="background: #f9f9f9; padding: 20px; border-radius: 8px; display: flex; flex-direction: column;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px;"><?php echo esc_html($distance); ?> - Male</h4>
+
+                        <?php if ($podium_male): ?>
+                            <ul class="wprr-winners-list" style="list-style: none; padding: 0; margin: 0 0 25px 0;">
+                                <?php foreach ($podium_male as $index => $winner): ?>
+                                    <li
+                                        style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                                        <span>
+                                            <?php
+                                            $rank = isset($winner->rank_gender) && $winner->rank_gender > 0 ? $winner->rank_gender : ($index + 1);
+                                            $medals = ['🥇', '🥈', '🥉'];
+                                            echo isset($medals[$rank - 1]) ? $medals[$rank - 1] : $rank . '.';
+                                            ?>
+                                            <?php echo esc_html($winner->full_name); ?>
+                                        </span>
+                                        <span style="opacity: 0.6;">#<?php echo esc_html($winner->bib_number); ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p style="opacity: 0.6;">No winners found.</p>
+                        <?php endif; ?>
+
+                        <?php if ($remaining_male > 0): ?>
+                            <a href="javascript:void(0);" class="wprr-view-more-btn"
+                                data-wprr-modal="<?php echo esc_attr($modal_id_male); ?>"
+                                style="margin-top: auto; display: block; text-align: center; padding: 10px; background: #333; color: #fff; text-decoration: none; border-radius: 4px;">
+                                <?php echo sprintf('View %d More Winners', $remaining_male); ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Female Card -->
+                    <div class="wprr-winner-card"
+                        style="background: #f9f9f9; padding: 20px; border-radius: 8px; display: flex; flex-direction: column;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px;"><?php echo esc_html($distance); ?> - Female</h4>
+
+                        <?php if ($podium_female): ?>
+                            <ul class="wprr-winners-list" style="list-style: none; padding: 0; margin: 0 0 25px 0;">
+                                <?php foreach ($podium_female as $index => $winner): ?>
+                                    <li
+                                        style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                                        <span>
+                                            <?php
+                                            $rank = isset($winner->rank_gender) && $winner->rank_gender > 0 ? $winner->rank_gender : ($index + 1);
+                                            $medals = ['🥇', '🥈', '🥉'];
+                                            echo isset($medals[$rank - 1]) ? $medals[$rank - 1] : $rank . '.';
+                                            ?>
+                                            <?php echo esc_html($winner->full_name); ?>
+                                        </span>
+                                        <span style="opacity: 0.6;">#<?php echo esc_html($winner->bib_number); ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p style="opacity: 0.6;">No winners found.</p>
+                        <?php endif; ?>
+
+                        <?php if ($remaining_female > 0): ?>
+                            <a href="javascript:void(0);" class="wprr-view-more-btn"
+                                data-wprr-modal="<?php echo esc_attr($modal_id_female); ?>"
+                                style="margin-top: auto; display: block; text-align: center; padding: 10px; background: #333; color: #fff; text-decoration: none; border-radius: 4px;">
+                                <?php echo sprintf('View %d More Winners', $remaining_female); ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+
+                </div> <!-- .wprr-winners-grid -->
+            </div> <!-- .wprr-distance-section .wprr-winners-container -->
+
+            <?php
+            // Collect modal arguments for rendering at the end
+            $modal_args_collection[] = [
+                'id' => $modal_id_male,
+                'event_id' => $event_id,
+                'distance' => $distance,
+                'gender' => 'Male',
+                'event_name' => $event_name,
+                'declared' => $declared_male
+            ];
+            $modal_args_collection[] = [
+                'id' => $modal_id_female,
+                'event_id' => $event_id,
+                'distance' => $distance,
+                'gender' => 'Female',
+                'event_name' => $event_name,
+                'declared' => $declared_female
+            ];
         }
 
-        ?>
-        <div class="wprr-winners-container" style="border: 1px solid #eee; padding: 20px;">
-            <!-- DATA SOURCE: DECLARED WINNERS
-                 DECLARED MALE: <?php echo $declared_male; ?> (Podium: <?php echo count($podium_male); ?>)
-                 REMAINING MALE: <?php echo $remaining_male; ?>
-                 DECLARED FEMALE: <?php echo $declared_female; ?> (Podium: <?php echo count($podium_female); ?>)
-                 REMAINING FEMALE: <?php echo $remaining_female; ?>
-            -->
-
-            <!-- Header -->
-            <div class="wprr-winners-header"
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0;"><?php echo esc_html($distance); ?> Winners</h3>
-                <a href="#" class="wprr-view-results-btn" style="text-decoration: none; font-weight: bold;">View
-                    <?php echo esc_html($distance); ?> Results &rarr;</a>
-            </div>
-
-            <!-- Cards Grid -->
-            <div class="wprr-winners-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-
-                <!-- Male Card -->
-                <div class="wprr-winner-card"
-                    style="background: #f9f9f9; padding: 20px; border-radius: 8px; display: flex; flex-direction: column;">
-                    <h4 style="margin-top: 0; margin-bottom: 15px;"><?php echo esc_html($distance); ?> - Male</h4>
-
-                    <?php if ($podium_male): ?>
-                        <ul class="wprr-winners-list" style="list-style: none; padding: 0; margin: 0 0 25px 0;">
-                            <?php foreach ($podium_male as $index => $winner): ?>
-                                <li
-                                    style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                                    <span>
-                                        <?php
-                                        $rank = isset($winner->rank_gender) && $winner->rank_gender > 0 ? $winner->rank_gender : ($index + 1);
-                                        $medals = ['🥇', '🥈', '🥉'];
-                                        echo isset($medals[$rank - 1]) ? $medals[$rank - 1] : $rank . '.';
-                                        ?>
-                                        <?php echo esc_html($winner->full_name); ?>
-                                    </span>
-                                    <span style="opacity: 0.6;">#<?php echo esc_html($winner->bib_number); ?></span>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php else: ?>
-                        <p style="opacity: 0.6;">No winners found.</p>
-                    <?php endif; ?>
-
-                    <?php if ($remaining_male > 0): ?>
-                        <a href="javascript:void(0);" class="wprr-view-more-btn"
-                            data-wprr-modal="<?php echo esc_attr($modal_id_male); ?>"
-                            style="margin-top: auto; display: block; text-align: center; padding: 10px; background: #333; color: #fff; text-decoration: none; border-radius: 4px;">
-                            <?php echo sprintf('View %d More Winners', $remaining_male); ?>
-                        </a>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Female Card -->
-                <div class="wprr-winner-card"
-                    style="background: #f9f9f9; padding: 20px; border-radius: 8px; display: flex; flex-direction: column;">
-                    <h4 style="margin-top: 0; margin-bottom: 15px;"><?php echo esc_html($distance); ?> - Female</h4>
-
-                    <?php if ($podium_female): ?>
-                        <ul class="wprr-winners-list" style="list-style: none; padding: 0; margin: 0 0 25px 0;">
-                            <?php foreach ($podium_female as $index => $winner): ?>
-                                <li
-                                    style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                                    <span>
-                                        <?php
-                                        $rank = isset($winner->rank_gender) && $winner->rank_gender > 0 ? $winner->rank_gender : ($index + 1);
-                                        $medals = ['🥇', '🥈', '🥉'];
-                                        echo isset($medals[$rank - 1]) ? $medals[$rank - 1] : $rank . '.';
-                                        ?>
-                                        <?php echo esc_html($winner->full_name); ?>
-                                    </span>
-                                    <span style="opacity: 0.6;">#<?php echo esc_html($winner->bib_number); ?></span>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php else: ?>
-                        <p style="opacity: 0.6;">No winners found.</p>
-                    <?php endif; ?>
-
-                    <?php if ($remaining_female > 0): ?>
-                        <a href="javascript:void(0);" class="wprr-view-more-btn"
-                            data-wprr-modal="<?php echo esc_attr($modal_id_female); ?>"
-                            style="margin-top: auto; display: block; text-align: center; padding: 10px; background: #333; color: #fff; text-decoration: none; border-radius: 4px;">
-                            <?php echo sprintf('View %d More Winners', $remaining_female); ?>
-                        </a>
-                    <?php endif; ?>
-                </div>
-
-            </div> <!-- .wprr-winners-grid -->
-        </div> <!-- .wprr-winners-container -->
-
-        <?php
-        $modal_args_male = [
-            'id' => $modal_id_male,
-            'event_id' => $event_id,
-            'distance' => $distance,
-            'gender' => 'Male',
-            'event_name' => $event_name,
-            'declared' => $declared_male
-        ];
-        $modal_args_female = [
-            'id' => $modal_id_female,
-            'event_id' => $event_id,
-            'distance' => $distance,
-            'gender' => 'Female',
-            'event_name' => $event_name,
-            'declared' => $declared_female
-        ];
-
-        WPRR_Modal_Renderer::render_category_modal($modal_args_male);
-        WPRR_Modal_Renderer::render_category_modal($modal_args_female);
+        // Render all modals at the end
+        foreach ($modal_args_collection as $modal_args) {
+            WPRR_Modal_Renderer::render_category_modal($modal_args);
+        }
     }
 }

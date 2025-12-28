@@ -89,6 +89,7 @@ class WPRR_Core
     public function register_query_vars($vars)
     {
         $vars[] = 'event_slug';
+        $vars[] = 'wprr_distance';
         return $vars;
     }
 
@@ -97,26 +98,23 @@ class WPRR_Core
      */
     public function add_rewrite_rules()
     {
-        $master_page_id = get_option('wprr_master_page_id', 0);
-        $permalink_base = get_option('wprr_permalink_base', 'race');
+        $permalink_base = get_option('wprr_permalink_base', 'results');
+        $master_page_id = get_option('wprr_master_page_id');
 
-        // Only add rewrite rules if both settings are configured
-        if ($master_page_id > 0 && !empty($permalink_base)) {
-            // Sanitize the permalink base
-            $permalink_base = sanitize_title($permalink_base);
-            
-            // Add rewrite rule: {base}/{slug} -> index.php?page_id={master_id}&event_slug={slug}
+        if ($master_page_id && !empty($permalink_base)) {
+            // Rule 1 (Deep Link): {base}/{event_slug}/{distance}
             add_rewrite_rule(
-                '^' . $permalink_base . '/([^/]*)/?$',
-                'index.php?page_id=' . absint($master_page_id) . '&event_slug=$matches[1]',
+                '^' . $permalink_base . '/([^/]+)/([^/]+)/?$',
+                'index.php?page_id=' . $master_page_id . '&event_slug=$matches[1]&wprr_distance=$matches[2]',
                 'top'
             );
 
-            // Flush rewrite rules if needed (only when settings were just changed)
-            if (get_option('wprr_rewrite_rules_flushed') !== 'yes') {
-                flush_rewrite_rules(false);
-                update_option('wprr_rewrite_rules_flushed', 'yes');
-            }
+            // Rule 2 (Overview): {base}/{event_slug}
+            add_rewrite_rule(
+                '^' . $permalink_base . '/([^/]+)/?$',
+                'index.php?page_id=' . $master_page_id . '&event_slug=$matches[1]',
+                'top'
+            );
         }
     }
 }
