@@ -230,6 +230,7 @@ class WP_Race_Results_Admin
             $event_date = sanitize_text_field($_POST['event_date']);
             $location = sanitize_text_field($_POST['location']);
             $banner_image = sanitize_text_field($_POST['banner_image']);
+            $results_page_id = isset($_POST['results_page_id']) ? absint($_POST['results_page_id']) : 0;
 
             $data = array(
                 'event_name' => $event_name,
@@ -237,6 +238,7 @@ class WP_Race_Results_Admin
                 'location' => $location,
                 'banner_image' => $banner_image,
                 'distance_categories' => sanitize_text_field($_POST['distance_categories']),
+                'results_page_id' => $results_page_id,
             );
 
             if (!empty($_POST['event_id'])) {
@@ -511,6 +513,29 @@ class WP_Race_Results_Admin
                             ?>
                             <img id="banner_image_preview" src="<?php echo esc_url($image_url); ?>"
                                 style="max-width:300px; margin-top:10px; display:<?php echo esc_attr($display); ?>;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="results_page_id">Results Page</label></th>
+                        <td>
+                            <?php
+                            // Fetch all published pages
+                            $pages = get_pages(array(
+                                'sort_column' => 'post_title',
+                                'sort_order' => 'ASC',
+                                'post_status' => 'publish'
+                            ));
+                            $current_page_id = $event ? $event->results_page_id : 0;
+                            ?>
+                            <select name="results_page_id" id="results_page_id" class="regular-text">
+                                <option value="0" <?php selected($current_page_id, 0); ?>>— Select Page —</option>
+                                <?php foreach ($pages as $page): ?>
+                                    <option value="<?php echo esc_attr($page->ID); ?>" <?php selected($current_page_id, $page->ID); ?>>
+                                        <?php echo esc_html($page->post_title); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">Select the WordPress page where race results will be displayed.</p>
                         </td>
                     </tr>
                 </table>

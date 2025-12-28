@@ -44,6 +44,7 @@ class WP_Race_Results_Activator
 			location varchar(255) DEFAULT NULL,
 			banner_image varchar(255) DEFAULT NULL,
 			distance_categories varchar(255) DEFAULT '',
+			results_page_id bigint(20) DEFAULT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id)
 		) $charset_collate;";

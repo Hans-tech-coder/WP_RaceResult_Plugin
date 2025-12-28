@@ -128,6 +128,27 @@ class WPRR_Events_Grid_Widget extends \Elementor\Widget_Base
 
         $this->end_controls_section();
 
+        // --- Content Tab: Button ---
+        $this->start_controls_section(
+            'section_button_content',
+            [
+                'label' => 'Button',
+                'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
+            ]
+        );
+
+        $this->add_control(
+            'button_text',
+            [
+                'label' => 'Button Text',
+                'type' => \Elementor\Controls_Manager::TEXT,
+                'default' => 'View Results',
+                'placeholder' => 'View Results',
+            ]
+        );
+
+        $this->end_controls_section();
+
         // --- Style Tab: Card ---
         $this->start_controls_section(
             'section_style_card',
@@ -443,6 +464,230 @@ class WPRR_Events_Grid_Widget extends \Elementor\Widget_Base
 
         $this->end_controls_section();
 
+        // --- Style Tab: Button ---
+        $this->start_controls_section(
+            'section_style_button',
+            [
+                'label' => 'Button',
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'button_typography',
+                'selector' => '{{WRAPPER}} .wprr-view-results-btn',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'button_alignment',
+            [
+                'label' => 'Alignment',
+                'type' => \Elementor\Controls_Manager::CHOOSE,
+                'options' => [
+                    'left' => [
+                        'title' => 'Left',
+                        'icon' => 'eicon-text-align-left',
+                    ],
+                    'center' => [
+                        'title' => 'Center',
+                        'icon' => 'eicon-text-align-center',
+                    ],
+                    'right' => [
+                        'title' => 'Right',
+                        'icon' => 'eicon-text-align-right',
+                    ],
+                    'justify' => [
+                        'title' => 'Justified',
+                        'icon' => 'eicon-text-align-justify',
+                    ],
+                ],
+                'default' => 'center',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-button-wrapper' => 'text-align: {{VALUE}};',
+                ],
+                'selectors_dictionary' => [
+                    'justify' => 'center',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'button_width',
+            [
+                'label' => 'Button Width',
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'auto',
+                'options' => [
+                    'auto' => 'Auto',
+                    'full' => 'Full Width',
+                ],
+                'prefix_class' => 'wprr-button-width-',
+            ]
+        );
+
+        $this->start_controls_tabs('tabs_button_style');
+
+        // Normal State
+        $this->start_controls_tab(
+            'tab_button_normal',
+            [
+                'label' => 'Normal',
+            ]
+        );
+
+        $this->add_control(
+            'button_text_color',
+            [
+                'label' => 'Text Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => '#ffffff',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-view-results-btn' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'button_background_color',
+            [
+                'label' => 'Background Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => '#0073aa',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-view-results-btn' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_tab();
+
+        // Hover State
+        $this->start_controls_tab(
+            'tab_button_hover',
+            [
+                'label' => 'Hover',
+            ]
+        );
+
+        $this->add_control(
+            'button_hover_text_color',
+            [
+                'label' => 'Text Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => '#ffffff',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-view-results-btn:hover' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'button_hover_background_color',
+            [
+                'label' => 'Background Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => '#005a87',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-view-results-btn:hover' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'button_hover_border_color',
+            [
+                'label' => 'Border Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-view-results-btn:hover' => 'border-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_tab();
+
+        $this->end_controls_tabs();
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'button_border',
+                'selector' => '{{WRAPPER}} .wprr-view-results-btn',
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'button_border_radius',
+            [
+                'label' => 'Border Radius',
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%', 'em'],
+                'default' => [
+                    'top' => 4,
+                    'right' => 4,
+                    'bottom' => 4,
+                    'left' => 4,
+                    'unit' => 'px',
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-view-results-btn' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'button_box_shadow',
+                'selector' => '{{WRAPPER}} .wprr-view-results-btn',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'button_padding',
+            [
+                'label' => 'Padding',
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'default' => [
+                    'top' => 12,
+                    'right' => 24,
+                    'bottom' => 12,
+                    'left' => 24,
+                    'unit' => 'px',
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-view-results-btn' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'button_margin',
+            [
+                'label' => 'Margin',
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'default' => [
+                    'top' => 16,
+                    'right' => 0,
+                    'bottom' => 0,
+                    'left' => 0,
+                    'unit' => 'px',
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-button-wrapper' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
     }
 
     protected function render()
@@ -452,6 +697,7 @@ class WPRR_Events_Grid_Widget extends \Elementor\Widget_Base
         $limit = absint($settings['number_of_events']);
         $order_by = $settings['order_by'];
         $order = $settings['order'];
+        $button_text = !empty($settings['button_text']) ? $settings['button_text'] : 'View Results';
 
         $results = WPRR_DB::get_events($limit, $order_by, $order);
 
@@ -459,6 +705,9 @@ class WPRR_Events_Grid_Widget extends \Elementor\Widget_Base
             echo '<div>No events found.</div>';
             return;
         }
+
+        // Determine button width class
+        $button_width_class = isset($settings['button_width']) && $settings['button_width'] === 'full' ? 'wprr-button-full' : '';
 
         // CSS Grid applied via Controls selectors
         echo '<div class="wprr-events-grid" style="display: grid;">';
@@ -494,6 +743,18 @@ class WPRR_Events_Grid_Widget extends \Elementor\Widget_Base
                             echo '<span class="wprr-distance-badge" style="display: inline-block;">' . esc_html($distance) . '</span>';
                         }
                     }
+                    echo '</div>';
+                }
+            }
+
+            // View Results Button
+            if (!empty($event->results_page_id) && absint($event->results_page_id) > 0) {
+                $results_url = get_permalink(absint($event->results_page_id));
+                if ($results_url) {
+                    echo '<div class="wprr-button-wrapper ' . esc_attr($button_width_class) . '">';
+                    echo '<a href="' . esc_url($results_url) . '" class="wprr-view-results-btn" style="display: inline-block; text-decoration: none; transition: all 0.3s ease;">';
+                    echo esc_html($button_text);
+                    echo '</a>';
                     echo '</div>';
                 }
             }

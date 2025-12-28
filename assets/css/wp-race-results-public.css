@@ -77,32 +77,29 @@
     letter-spacing: -0.01em;
 }
 
-/* Modern Circular Close Button */
+/* Clean Static Close Icon */
 .wprr-modal-close {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f0f2f5;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: transparent;
     border: none;
-    border-radius: 50%;
-    font-size: 1.5rem;
-    line-height: 1;
+    font-size: 32px;
+    line-height: 0.9;
     cursor: pointer;
-    color: #333;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #888;
+    transition: color 0.2s ease;
     padding: 0;
-    flex-shrink: 0;
+    width: auto;
+    height: auto;
 }
 
 .wprr-modal-close:hover {
-    background: #d4d7dc;
-    transform: rotate(90deg);
+    color: #333;
 }
 
 .wprr-modal-close:active {
-    transform: rotate(90deg) scale(0.95);
+    color: #000;
 }
 
 /* Modal Body */
