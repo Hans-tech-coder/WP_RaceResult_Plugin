@@ -195,8 +195,12 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
     {
         $settings = $this->get_settings_for_display();
 
-        // Visibility Check: Only render if wprr_distance query var is set
-        $distance = get_query_var('wprr_distance');
+        // Step 1: Determine Active Distance
+        // Prioritize GET parameter (user switch) over URL path (initial load)
+        $path_distance = get_query_var('wprr_distance');
+        $get_distance = isset($_GET['wprr_distance']) ? sanitize_text_field($_GET['wprr_distance']) : '';
+        $distance = !empty($get_distance) ? $get_distance : $path_distance;
+
         if (empty($distance)) {
             return;
         }
@@ -221,13 +225,15 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
         $event_id = absint($event->id);
         $event_name = $event->event_name;
 
-        // MATCHING LOGIC: Match URL slug to DB stored value
-        $target_distance = $distance; // Default fallback
+        // Step 2: DB Matching
+        // Fetch all available distances for the event
         $available_distances = WPRR_DB::get_distances_for_event($event_id);
 
+        // Match "Active Distance" (slug or raw) to the correct Database Value
+        $target_distance = $distance; // Default fallback
         if (!empty($available_distances)) {
             foreach ($available_distances as $db_dist) {
-                if (sanitize_title($db_dist) === $distance) {
+                if (sanitize_title($db_dist) === sanitize_title($distance)) {
                     $target_distance = $db_dist;
                     break;
                 }
@@ -246,19 +252,29 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
         $total_results = WPRR_DB::count_results_for_table($event_id, $target_distance, $gender, $search);
         $total_pages = ceil($total_results / $limit);
 
-        // Construct Clean Base URL for Pagination & Filtering
+        // Construct Clean Base URL
         $perm_base = get_option('wprr_permalink_base', 'results');
 
+        // Initialize base URL for JS redirect
+        $event_base_url = '';
+
         // If we are on a pretty URL (which we should be if wprr_distance is set via rewrite rules)
-        if (!empty($event_slug) && !empty($distance)) {
-            // Trailing slash is important for pretty structure
-            $base_url = home_url('/' . $perm_base . '/' . $event_slug . '/' . $distance . '/');
+        if (!empty($event_slug)) {
+            // We use the NEW $distance (which might be from GET) to construct the base URL
+            // This effectively "redirects" the form action to the pretty URL of the selected distance
+            $slug_distance = sanitize_title($distance);
+            $base_url = home_url('/' . $perm_base . '/' . $event_slug . '/' . $slug_distance . '/');
+            // Logic for View Winners Button (Event Overview): /results/event-slug/
+            $winners_url = home_url('/' . $perm_base . '/' . $event_slug . '/');
+            // Assign event_base_url for JS redirect in dropdown
+            $event_base_url = $winners_url;
         } else {
             // Fallback for non-pretty URLs
             $base_url = add_query_arg([
                 'event_id' => $event_id,
                 'wprr_distance' => $distance
             ], home_url('/'));
+            $winners_url = add_query_arg('event_id', $event_id, home_url('/'));
         }
 
         // Determine striped rows class
@@ -272,43 +288,185 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
                     <?php echo esc_html($event_name); ?></h2>
             </div>
 
-            <!-- Filter Form -->
-            <form method="get" action="<?php echo esc_url($base_url); ?>" class="wprr-results-filters"
-                style="margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
+            <style>
+                .wprr-filter-container {
+                    margin-bottom: 20px;
+                    border: 1px solid #eee;
+                    padding: 15px;
+                    border-radius: 8px;
+                    background: #fafafa;
+                }
 
-                <?php if (empty($event_slug)): // Only add hidden fields if NOT using pretty URLs ?>
+                .wprr-filter-top-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    flex-wrap: wrap;
+                }
+
+                .wprr-filter-category-group {
+                    flex: 0 0 auto;
+                }
+
+                .wprr-filter-search-group {
+                    flex: 1;
+                    display: flex;
+                    gap: 5px;
+                    min-width: 250px;
+                }
+
+                .wprr-filter-search-group input {
+                    flex: 1;
+                    padding: 8px 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                }
+
+                .wprr-view-winners-btn {
+                    margin-left: auto;
+                    padding: 8px 20px;
+                    background: #333;
+                    color: #fff;
+                    border-radius: 4px;
+                    text-decoration: none;
+                    font-weight: bold;
+                    font-size: 14px;
+                    border: 1px solid #333;
+                }
+
+                .wprr-view-winners-btn:hover {
+                    background: #555;
+                    color: #fff;
+                }
+
+                .wprr-additional-filters-toggle {
+                    margin-top: 10px;
+                    font-size: 13px;
+                    color: #0073aa;
+                    cursor: pointer;
+                    display: inline-block;
+                }
+
+                .wprr-additional-filters {
+                    margin-top: 15px;
+                    padding-top: 15px;
+                    border-top: 1px solid #eee;
+                    display: none;
+                    /* Hidden by default */
+                    gap: 15px;
+                    align-items: flex-end;
+                }
+
+                .wprr-additional-filters.active {
+                    display: flex;
+                }
+
+                .wprr-form-group label {
+                    display: block;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    font-size: 13px;
+                }
+
+                .wprr-form-group select {
+                    min-width: 150px;
+                    padding: 6px;
+                }
+            </style>
+
+            <!-- Filter FORM Wrapper -->
+            <!-- Form Action links to the Current Page (Results for Active Distance) 
+                 This ensures Search and Gender filters work on the current distance. -->
+            <form method="get" action="<?php echo esc_url($base_url); ?>" class="wprr-results-filters">
+
+                <?php
+                // Only add event_id hidden field if NOT using pretty URLs
+                // This prevents redundant "event_id" param in pretty URL mode
+                if (empty($event_slug)): ?>
                     <input type="hidden" name="event_id" value="<?php echo esc_attr($event_id); ?>">
-                    <input type="hidden" name="wprr_distance" value="<?php echo esc_attr($distance); ?>">
                 <?php endif; ?>
 
                 <!-- Explicitly reset page to 1 on new filter -->
                 <input type="hidden" name="wprr_page" value="1">
 
-                <div style="flex: 1;">
-                    <label for="wprr-search" style="display: block; margin-bottom: 5px; font-weight: bold;">Search
-                        (Name/Bib):</label>
-                    <input type="text" id="wprr-search" name="search" value="<?php echo esc_attr($search); ?>"
-                        placeholder="Search by name or bib number..."
-                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
+                <div class="wprr-filter-container">
 
-                <div style="flex: 0 0 150px;">
-                    <label for="wprr-gender" style="display: block; margin-bottom: 5px; font-weight: bold;">Gender:</label>
-                    <select id="wprr-gender" name="gender"
-                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <option value="" <?php selected($gender, ''); ?>>All</option>
-                        <option value="Male" <?php selected($gender, 'Male'); ?>>Male</option>
-                        <option value="Female" <?php selected($gender, 'Female'); ?>>Female</option>
-                    </select>
-                </div>
+                    <!-- Section 1: Top Bar -->
+                    <div class="wprr-filter-top-row">
 
-                <div>
-                    <button type="submit"
-                        style="padding: 8px 20px; background: #0073aa; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Filter</button>
-                    <?php if (!empty($search) || !empty($gender)): ?>
-                        <a href="<?php echo esc_url($base_url); ?>"
-                            style="margin-left: 10px; padding: 8px 20px; display: inline-block; background: #ccc; color: #333; text-decoration: none; border-radius: 4px;">Reset</a>
-                    <?php endif; ?>
+                        <!-- Category (Distance) -->
+                        <div class="wprr-filter-category-group">
+                            <?php
+                            // Logic for Dropdown Name and JS Redirect
+                            $select_name = 'wprr_distance'; // Default name for form submit
+                            $onchange_logic = "this.form.submit()"; // Default Logic
+                    
+                            if (!empty($event_base_url)) {
+                                // Pretty URL Mode:
+                                // 1. JS Redirect to clean URL
+                                $onchange_logic = "window.location.href = '" . esc_url($event_base_url) . "' + this.value + '/';";
+                                // 2. Remove 'name' attribute so searching doesn't add 'wprr_distance=...' to URL
+                                $select_name = '';
+                            }
+                            ?>
+                            <select <?php echo $select_name ? 'name="' . esc_attr($select_name) . '"' : ''; ?>
+                                onchange="<?php echo $onchange_logic; ?>"
+                                style="padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-weight: bold;">
+                                <?php if (!empty($available_distances)): ?>
+                                    <?php foreach ($available_distances as $dist): ?>
+                                        <option value="<?php echo esc_attr(sanitize_title($dist)); ?>" <?php selected(sanitize_title($dist), sanitize_title($distance)); ?>>
+                                            <?php echo esc_html($dist); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="<?php echo esc_attr($distance); ?>"><?php echo esc_html($distance); ?></option>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+
+                        <!-- Search Bar -->
+                        <div class="wprr-filter-search-group">
+                            <input type="text" name="search" value="<?php echo esc_attr($search); ?>"
+                                placeholder="Search Name or Bib...">
+                            <button type="submit"
+                                style="padding: 8px 15px; background: #0073aa; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Search</button>
+                        </div>
+
+                        <!-- View Winners Button -->
+                        <a href="<?php echo esc_url($winners_url); ?>" class="wprr-view-winners-btn">View Winners</a>
+                    </div>
+
+                    <!-- Toggle Link -->
+                    <div class="wprr-additional-filters-toggle"
+                        onclick="document.getElementById('wprr-additional-filters').classList.toggle('active');">
+                        Additional Filters ^
+                    </div>
+
+                    <!-- Section 2: Additional Filters -->
+                    <div id="wprr-additional-filters"
+                        class="wprr-additional-filters <?php echo (!empty($gender)) ? 'active' : ''; ?>">
+                        <div class="wprr-form-group">
+                            <label>Gender</label>
+                            <select name="gender">
+                                <option value="" <?php selected($gender, ''); ?>>All Genders</option>
+                                <option value="Male" <?php selected($gender, 'Male'); ?>>Male</option>
+                                <option value="Female" <?php selected($gender, 'Female'); ?>>Female</option>
+                            </select>
+                        </div>
+
+                        <div class="wprr-form-group">
+                            <button type="submit"
+                                style="padding: 6px 15px; background: #666; color: white; border: none; border-radius: 4px;">Filter</button>
+                        </div>
+
+                        <?php if (!empty($search) || !empty($gender)): ?>
+                            <div class="wprr-form-group">
+                                <a href="<?php echo esc_url($base_url); ?>"
+                                    style="color: #999; text-decoration: underline; font-size: 13px;">Reset Filters</a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
                 </div>
             </form>
 
