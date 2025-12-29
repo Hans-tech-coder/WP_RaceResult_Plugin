@@ -78,6 +78,15 @@ class WPRR_Core
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('wprr_modal_nonce')
         ]);
+
+        // Enqueue Chart.js for Analysis Views
+        wp_enqueue_script(
+            'wprr-chart-js',
+            'https://cdn.jsdelivr.net/npm/chart.js',
+            [],
+            null,
+            true
+        );
     }
 
     /**
@@ -90,6 +99,7 @@ class WPRR_Core
     {
         $vars[] = 'event_slug';
         $vars[] = 'wprr_distance';
+        $vars[] = 'wprr_entry_id';
         return $vars;
     }
 
@@ -102,14 +112,21 @@ class WPRR_Core
         $master_page_id = get_option('wprr_master_page_id');
 
         if ($master_page_id && !empty($permalink_base)) {
-            // Rule 1 (Deep Link): {base}/{event_slug}/{distance}
+            // Rule 1 (Analysis Deep Link): {base}/{event}/{distance}/entry/{id}
+            add_rewrite_rule(
+                '^' . $permalink_base . '/([^/]+)/([^/]+)/entry/([^/]+)/?$',
+                'index.php?page_id=' . $master_page_id . '&event_slug=$matches[1]&wprr_distance=$matches[2]&wprr_entry_id=$matches[3]',
+                'top'
+            );
+
+            // Rule 2 (Deep Link): {base}/{event_slug}/{distance}
             add_rewrite_rule(
                 '^' . $permalink_base . '/([^/]+)/([^/]+)/?$',
                 'index.php?page_id=' . $master_page_id . '&event_slug=$matches[1]&wprr_distance=$matches[2]',
                 'top'
             );
 
-            // Rule 2 (Overview): {base}/{event_slug}
+            // Rule 3 (Overview): {base}/{event_slug}
             add_rewrite_rule(
                 '^' . $permalink_base . '/([^/]+)/?$',
                 'index.php?page_id=' . $master_page_id . '&event_slug=$matches[1]',

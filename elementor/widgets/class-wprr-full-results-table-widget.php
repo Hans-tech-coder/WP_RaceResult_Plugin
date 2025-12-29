@@ -55,6 +55,39 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
 
         $this->end_controls_section();
 
+        // --- Action Column Content Section ---
+        $this->start_controls_section(
+            'section_action_content',
+            [
+                'label' => 'Action Column',
+                'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
+            ]
+        );
+
+        $this->add_control(
+            'action_header_text',
+            [
+                'label' => 'Header Text',
+                'type' => \Elementor\Controls_Manager::TEXT,
+                'default' => 'Action',
+            ]
+        );
+
+        $this->add_control(
+            'action_icon',
+            [
+                'label' => 'Icon',
+                'type' => \Elementor\Controls_Manager::ICONS,
+                'default' => [
+                    'value' => 'fas fa-chart-bar',
+                    'library' => 'fa-solid',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+
         // Style Section: Table
         $this->start_controls_section(
             'section_style_table',
@@ -189,10 +222,80 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
         );
 
         $this->end_controls_section();
+
+        // --- Action Column Style Section ---
+        $this->start_controls_section(
+            'section_style_action',
+            [
+                'label' => 'Action Column',
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'action_icon_color',
+            [
+                'label' => 'Icon Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => '#333333',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-analysis-link' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-analysis-link i' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-analysis-link svg' => 'fill: {{VALUE}}; color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-analysis-link svg path' => 'fill: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'action_icon_hover_color',
+            [
+                'label' => 'Hover Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => '#0073aa',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-analysis-link:hover' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-analysis-link:hover i' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-analysis-link:hover svg' => 'fill: {{VALUE}}; color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-analysis-link:hover svg path' => 'fill: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'action_icon_size',
+            [
+                'label' => 'Icon Size',
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => ['px', 'em'],
+                'range' => [
+                    'px' => [
+                        'min' => 10,
+                        'max' => 100,
+                    ],
+                ],
+                'default' => [
+                    'unit' => 'px',
+                    'size' => 16,
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-analysis-link i' => 'font-size: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .wprr-analysis-link svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
     }
 
     protected function render()
     {
+        // Check if we are viewing a specific entry analysis
+        // If so, hide this table widget
+        if (!empty(get_query_var('wprr_entry_id'))) {
+            return;
+        }
+
         $settings = $this->get_settings_for_display();
 
         // Step 1: Determine Active Distance
@@ -285,7 +388,8 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
             <!-- Header -->
             <div class="wprr-results-header" style="margin-bottom: 20px;">
                 <h2 style="margin: 0 0 10px 0;">Results for <?php echo esc_html($target_distance); ?> -
-                    <?php echo esc_html($event_name); ?></h2>
+                    <?php echo esc_html($event_name); ?>
+                </h2>
             </div>
 
             <style>
@@ -483,10 +587,17 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
                                 <th style="text-align: left; font-weight: bold;">Gender</th>
                                 <th style="text-align: left; font-weight: bold;">Chip Time</th>
                                 <th style="text-align: left; font-weight: bold;">Gun Time</th>
+                                <th style="text-align: left; font-weight: bold;">
+                                    <?php echo esc_html($settings['action_header_text']); ?>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($results as $index => $result): ?>
+                                <?php
+                                // Construct Analysis URL
+                                $analysis_url = esc_url(trailingslashit($base_url) . 'entry/' . $result->id . '/');
+                                ?>
                                 <tr>
                                     <td><?php echo esc_html($result->rank_overall); ?></td>
                                     <td><?php echo esc_html($result->bib_number); ?></td>
@@ -494,6 +605,12 @@ class WPRR_Full_Results_Table_Widget extends \Elementor\Widget_Base
                                     <td><?php echo esc_html($result->gender); ?></td>
                                     <td><?php echo esc_html($result->chip_time); ?></td>
                                     <td><?php echo esc_html($result->gun_time); ?></td>
+
+                                    <td style="text-align: left;">
+                                        <a href="<?php echo $analysis_url; ?>" class="wprr-analysis-link" title="View Analysis">
+                                            <?php \Elementor\Icons_Manager::render_icon($settings['action_icon'], ['aria-hidden' => 'true']); ?>
+                                        </a>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
