@@ -35,6 +35,7 @@ class WPRR_Core
     {
         require_once WPRR_PATH . 'includes/class-wprr-db.php';
         require_once WPRR_PATH . 'includes/class-wprr-modal-renderer.php';
+        require_once WPRR_PATH . 'includes/class-wprr-table-renderer.php';
         require_once WPRR_PATH . 'includes/class-wp-race-results-admin.php';
         require_once WPRR_PATH . 'includes/csv-import-handler.php';
 
@@ -55,6 +56,10 @@ class WPRR_Core
         add_action('wp_enqueue_scripts', [$this, 'enqueue_public_assets']);
         add_action('init', [$this, 'add_rewrite_rules']);
         add_filter('query_vars', [$this, 'register_query_vars']);
+
+        // AJAX Handlers
+        add_action('wp_ajax_wprr_filter_results', [$this, 'ajax_filter_results']);
+        add_action('wp_ajax_nopriv_wprr_filter_results', [$this, 'ajax_filter_results']);
     }
 
     public function enqueue_public_assets()
@@ -85,6 +90,15 @@ class WPRR_Core
             'https://cdn.jsdelivr.net/npm/chart.js',
             [],
             null,
+            true
+        );
+
+        // AJAX Table Filtering
+        wp_enqueue_script(
+            'wprr-ajax-table',
+            WPRR_URL . 'assets/js/wprr-ajax-table.js',
+            ['jquery', 'wprr-modal-js'],
+            WPRR_VERSION,
             true
         );
     }
@@ -133,5 +147,74 @@ class WPRR_Core
                 'top'
             );
         }
+    }
+
+    /**
+     * AJAX handler for filtering race results.
+     */
+    public function ajax_filter_results()
+    {
+        check_ajax_referer('wprr_modal_nonce', 'nonce');
+
+        $page = isset($_POST['wprr_page']) ? max(1, absint($_POST['wprr_page'])) : 1;
+        $distance = isset($_POST['wprr_distance']) ? sanitize_text_field($_POST['wprr_distance']) : '';
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        $gender = isset($_POST['gender']) ? sanitize_text_field($_POST['gender']) : '';
+        $event_id = isset($_POST['event_id']) ? absint($_POST['event_id']) : 0;
+        $settings = isset($_POST['widget_settings']) ? $_POST['widget_settings'] : [];
+
+        // --- Resolve Distance Slug to Raw Name ---
+        $available_distances = WPRR_DB::get_distances_for_event($event_id);
+        if (!empty($distance) && !empty($available_distances)) {
+            foreach ($available_distances as $dist) {
+                if (sanitize_title($dist) === sanitize_title($distance)) {
+                    $distance = $dist;
+                    break;
+                }
+            }
+        }
+
+        // --- Calculate Limits ---
+        $limit = isset($settings['rows_per_page']) ? max(1, absint($settings['rows_per_page'])) : 20;
+        $offset = ($page - 1) * $limit;
+
+        // --- Fetch Results ---
+        $results = WPRR_DB::get_results_for_table($event_id, $distance, $gender, $search, $limit, $offset);
+        $total_results = WPRR_DB::count_results_for_table($event_id, $distance, $gender, $search);
+        $total_pages = ceil($total_results / $limit);
+
+        // --- Reconstruct Base URL for Links ---
+        $perm_base = get_option('wprr_permalink_base', 'results');
+        $event_obj = WPRR_DB::get_event_by_id($event_id);
+        $event_slug = ($event_obj && !empty($event_obj->slug)) ? $event_obj->slug : 'event';
+
+        $dist_slug = sanitize_title($distance);
+        $base_url = home_url('/' . $perm_base . '/' . $event_slug . '/' . $dist_slug . '/');
+
+        // Build the Browser URL (Deep Link)
+        $new_url = $base_url;
+        $query_args = [];
+        if (!empty($search))
+            $query_args['search'] = $search;
+        if (!empty($gender))
+            $query_args['gender'] = $gender;
+        if ($page > 1)
+            $query_args['wprr_page'] = $page;
+
+        if (!empty($query_args)) {
+            $new_url = add_query_arg($query_args, $base_url);
+        }
+
+        // --- Render HTML ---
+        if (!class_exists('WPRR_Table_Renderer')) {
+            require_once WPRR_PATH . 'includes/class-wprr-table-renderer.php';
+        }
+
+        $html = WPRR_Table_Renderer::render_html($results, $base_url, $page, $total_pages, $search, $gender, $settings);
+
+        wp_send_json_success([
+            'html' => $html,
+            'new_url' => $new_url
+        ]);
     }
 }

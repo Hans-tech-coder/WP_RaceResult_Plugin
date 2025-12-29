@@ -248,11 +248,20 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
             }
 
             @keyframes wprrFadeIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
 
-            .wprr-view-container { transition: all 0.3s ease; }
+            .wprr-view-container {
+                transition: all 0.3s ease;
+            }
 
             /* Luxury UI Enhancements */
             .wprr-chart-box {
@@ -263,7 +272,9 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 overflow: hidden;
             }
 
-            .wprr-chart-box:hover { transform: translateY(-5px); }
+            .wprr-chart-box:hover {
+                transform: translateY(-5px);
+            }
 
             /* New Responsive Layout Classes */
             .wprr-perf-layout {
@@ -286,7 +297,7 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 display: flex;
                 flex-direction: column;
                 gap: 30px;
-                border-left: 2px solid #f0f0f0;
+                border-left: 2 solid #f0f0f0;
                 padding-left: 40px;
             }
 
@@ -313,8 +324,10 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
 
             /* Mobile Overrides (Max-width 767px) */
             @media (max-width: 767px) {
-                .wprr-chart-box { padding: 25px !important; }
-                
+                .wprr-chart-box {
+                    padding: 25px !important;
+                }
+
                 .wprr-chart-header {
                     flex-direction: column;
                     gap: 15px;
@@ -323,7 +336,8 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 }
 
                 .wprr-perf-layout {
-                    flex-direction: column-reverse; /* Stats TOP, Chart BOTTOM */
+                    flex-direction: column-reverse;
+                    /* Stats TOP, Chart BOTTOM */
                     gap: 40px;
                 }
 
@@ -333,24 +347,27 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                     padding-left: 0;
                     width: 100%;
                     justify-content: space-around;
-                    border-bottom: 1px solid #f0f0f0;
+                    border-bottom: 1 solid #f0f0f0;
                     padding-bottom: 25px;
                 }
 
-                .wprr-stat-item { text-align: center; }
+                .wprr-stat-item {
+                    text-align: center;
+                }
 
                 .wprr-chart-container {
                     width: 280px;
                     height: 280px;
                 }
 
-                .wprr-stat-value { font-size: 34px; }
+                .wprr-stat-value {
+                    font-size: 34px;
+                }
             }
         </style>
 
         <div class="wprr-analysis-wrapper">
 
-            <!-- Header Card -->
             <div class="wprr-analysis-card"
                 style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px; padding: 30px; margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; background: #fff;">
 
@@ -378,14 +395,16 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 </div>
 
                 <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; width: auto;">
-                    <div style="padding: 15px 25px; background: rgba(0,0,0,0.05); border-radius: 8px; text-align: center; flex: 1; min-width: 120px;">
+                    <div
+                        style="padding: 15px 25px; background: rgba(0,0,0,0.05); border-radius: 8px; text-align: center; flex: 1; min-width: 120px;">
                         <div style="font-size: 12px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px;">Chip Time
                         </div>
                         <div style="font-size: 20px; font-weight: bold; color: #333;">
                             <?php echo esc_html($result->chip_time); ?>
                         </div>
                     </div>
-                    <div style="padding: 15px 25px; background: rgba(0,0,0,0.05); border-radius: 8px; text-align: center; flex: 1; min-width: 120px;">
+                    <div
+                        style="padding: 15px 25px; background: rgba(0,0,0,0.05); border-radius: 8px; text-align: center; flex: 1; min-width: 120px;">
                         <div style="font-size: 12px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px;">Gun Time
                         </div>
                         <div style="font-size: 20px; font-weight: bold; color: #555;"><?php echo esc_html($result->gun_time); ?>
@@ -394,10 +413,8 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 </div>
             </div>
 
-            <!-- Main Sections Grid -->
             <div style="display: flex; flex-direction: column; gap: 40px;">
 
-                <!-- Section 1: Overall Performance (Luxury UI) -->
                 <div class="wprr-chart-box" style="padding: 40px;">
                     <div class="wprr-chart-header"
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
@@ -419,13 +436,11 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                     </div>
 
                     <div class="wprr-perf-layout">
-
-                        <!-- Gun View -->
                         <div id="wprr-perf-view-gun" class="wprr-view-container wprr-fade-in"
                             style="display: flex; flex: 1; align-items: center; justify-content: center; gap: inherit; flex-direction: inherit;">
-                            
                             <div class="wprr-chart-container">
-                                <canvas id="wprr-perf-chart-gun" style="position: relative; z-index: 2; width: 100%; height: 100%;"></canvas>
+                                <canvas id="wprr-perf-chart-gun"
+                                    style="position: relative; z-index: 2; width: 100%; height: 100%;"></canvas>
                                 <div
                                     style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1; pointer-events: none;">
                                     <div style="font-size: 38px; font-weight: 800; color: #e05a2b; line-height: 1;">
@@ -436,7 +451,6 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                                         Percentile</div>
                                 </div>
                             </div>
-
                             <div class="wprr-stats-column">
                                 <div class="wprr-stat-item">
                                     <div class="wprr-stat-value"><?php echo esc_html($rank_gun_overall); ?></div>
@@ -449,12 +463,11 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                             </div>
                         </div>
 
-                        <!-- Chip View -->
                         <div id="wprr-perf-view-chip" class="wprr-view-container"
                             style="display: none; flex: 1; align-items: center; justify-content: center; gap: inherit; flex-direction: inherit;">
-                            
                             <div class="wprr-chart-container">
-                                <canvas id="wprr-perf-chart-chip" style="position: relative; z-index: 2; width: 100%; height: 100%;"></canvas>
+                                <canvas id="wprr-perf-chart-chip"
+                                    style="position: relative; z-index: 2; width: 100%; height: 100%;"></canvas>
                                 <div
                                     style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1; pointer-events: none;">
                                     <div style="font-size: 38px; font-weight: 800; color: #e05a2b; line-height: 1;">
@@ -465,7 +478,6 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                                         Percentile</div>
                                 </div>
                             </div>
-
                             <div class="wprr-stats-column">
                                 <div class="wprr-stat-item">
                                     <div class="wprr-stat-value"><?php echo esc_html($rank_chip_overall); ?></div>
@@ -480,7 +492,6 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                     </div>
                 </div>
 
-                <!-- Section 2: Finisher's Distribution -->
                 <div class="wprr-chart-box" style="padding: 30px;">
                     <div class="wprr-chart-header"
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -490,22 +501,20 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                         <div class="wprr-toggle-wrapper"
                             style="background: #f0f2f5; padding: 4px; border-radius: 50px; display: inline-flex; align-items: center;">
                             <button id="wprr-dist-btn-gun" onclick="toggleDistMode('gun')"
-                                style="border: none; background: #333; color: #fff; padding: 6px 16px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                style="border: none; background: #333; color: #fff; padding: 8px 20px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
                                 Gun Time
                             </button>
                             <button id="wprr-dist-btn-chip" onclick="toggleDistMode('chip')"
-                                style="border: none; background: transparent; color: #888; padding: 6px 16px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none;">
+                                style="border: none; background: transparent; color: #888; padding: 8px 20px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none;">
                                 Chip Time
                             </button>
                         </div>
                     </div>
 
                     <div style="position: relative; height: 350px;">
-                        <!-- Gun Dist View -->
                         <div id="wprr-dist-view-gun" class="wprr-view-container wprr-fade-in" style="height: 100%;">
                             <canvas id="wprr-dist-chart-gun"></canvas>
                         </div>
-                        <!-- Chip Dist View -->
                         <div id="wprr-dist-view-chip" class="wprr-view-container" style="display: none; height: 100%;">
                             <canvas id="wprr-dist-chart-chip"></canvas>
                         </div>
@@ -513,7 +522,6 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 </div>
             </div>
 
-            <!-- Back Button -->
             <div style="margin-top: 50px; text-align: center;">
                 <a href="javascript:history.back()"
                     style="display: inline-block; padding: 14px 35px; border: 2px solid #333; border-radius: 12px; color: #333; text-decoration: none; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.05);"
@@ -639,7 +647,12 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                     new Chart(ctxDistGun, getDistConfig('gun'));
                 });
 
-                // --- Global Toggles ---
+                // --- Global Toggles (Standardized Padding: 8px 20px) ---
+
+                // UNIFORM STYLE CONSTANTS (Applicable to both toggles)
+                const activeStyle = "border: none; background: #333; color: #fff; padding: 8px 20px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);";
+                const inactiveStyle = "border: none; background: transparent; color: #888; padding: 8px 20px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none;";
+
                 window.toggleAnalysisMode = function (mode) {
                     const gunView = document.getElementById('wprr-perf-view-gun');
                     const chipView = document.getElementById('wprr-perf-view-chip');
@@ -647,9 +660,6 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                     const headerRank = document.getElementById('wprr-header-rank');
                     const btnGun = document.getElementById('wprr-perf-btn-gun');
                     const btnChip = document.getElementById('wprr-perf-btn-chip');
-
-                    const activeStyle = "border: none; background: #333; color: #fff; padding: 8px 20px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);";
-                    const inactiveStyle = "border: none; background: transparent; color: #888; padding: 8px 20px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none;";
 
                     if (mode === 'gun') {
                         chipView.style.display = 'none';
@@ -681,9 +691,6 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                     const title = document.getElementById('wprr-dist-title');
                     const btnGun = document.getElementById('wprr-dist-btn-gun');
                     const btnChip = document.getElementById('wprr-dist-btn-chip');
-
-                    const activeStyle = "border: none; background: #333; color: #fff; padding: 6px 16px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);";
-                    const inactiveStyle = "border: none; background: transparent; color: #888; padding: 6px 16px; border-radius: 40px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; outline: none;";
 
                     if (mode === 'gun') {
                         chipView.style.display = 'none';
