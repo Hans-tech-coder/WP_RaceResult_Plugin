@@ -249,7 +249,7 @@ class WPRR_DB
         }
 
         // Build query with ORDER BY duration (chip_time) ASC
-        $query = "SELECT rank_overall, rank_gender, bib_number, full_name, gender, chip_time, gun_time
+        $query = "SELECT id, rank_overall, rank_gender, bib_number, full_name, gender, chip_time, gun_time
                   FROM $table_results
                   $where
                   ORDER BY chip_time ASC, rank_overall ASC
@@ -303,5 +303,123 @@ class WPRR_DB
         $query = "SELECT COUNT(*) FROM $table_results $where";
 
         return (int) $wpdb->get_var($wpdb->prepare($query, ...$params));
+    }
+    /**
+     * Get a single result row by ID.
+     *
+     * @param int $id The result ID.
+     * @return object|null Result row or null.
+     */
+    public static function get_result_by_id($id)
+    {
+        global $wpdb;
+        $table_results = $wpdb->prefix . 'race_results';
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_results WHERE id = %d", absint($id)));
+    }
+
+    /**
+     * Get all chip times (in seconds) for a category to build histograms.
+     *
+     * @param int $event_id
+     * @param string $distance
+     * @param string|null $gender Optional gender filter
+     * @return array Array of chip times (strings) to be processed.
+     */
+    public static function get_all_finish_times($event_id, $distance, $gender = null)
+    {
+        global $wpdb;
+        $table_results = $wpdb->prefix . 'race_results';
+        $clean_dist = str_replace(' ', '', $distance);
+
+        $sql = "SELECT chip_time FROM $table_results 
+                WHERE event_id = %d 
+                AND REPLACE(distance, ' ', '') = %s
+                AND chip_time IS NOT NULL AND chip_time != ''";
+
+        $params = [$event_id, $clean_dist];
+
+        if (!empty($gender)) {
+            $clean_gender = strtolower($gender);
+            if ($clean_gender === 'm' || $clean_gender === 'male') {
+                $sql .= " AND LOWER(gender) IN ('m', 'male')";
+            } elseif ($clean_gender === 'f' || $clean_gender === 'female') {
+                $sql .= " AND LOWER(gender) IN ('f', 'female')";
+            }
+        }
+
+        // Return just the column of times
+        return $wpdb->get_col($wpdb->prepare($sql, ...$params));
+    }
+
+    /**
+     * Get total count of participants for a specific event and distance.
+     *
+     * @param int $event_id
+     * @param string $distance
+     * @param string|null $gender Optional gender filter.
+     * @return int Total count.
+     */
+    public static function get_total_participants_count($event_id, $distance, $gender = null)
+    {
+        global $wpdb;
+        $table_results = $wpdb->prefix . 'race_results';
+        $clean_dist = str_replace(' ', '', $distance);
+
+        $sql = "SELECT COUNT(*) FROM $table_results WHERE event_id = %d AND REPLACE(distance, ' ', '') = %s";
+        $params = [absint($event_id), $clean_dist];
+
+        if (!empty($gender)) {
+            $clean_gender = strtolower($gender);
+            if ($clean_gender === 'm' || $clean_gender === 'male') {
+                $sql .= " AND LOWER(gender) IN ('m', 'male')";
+            } elseif ($clean_gender === 'f' || $clean_gender === 'female') {
+                $sql .= " AND LOWER(gender) IN ('f', 'female')";
+            }
+        }
+
+        return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
+    }
+
+    /**
+     * Calculate rank dynamically based on a time value (e.g., Chip Time).
+     * Counts how many runners have a time LESS than the provided time.
+     *
+     * @param int $event_id
+     * @param string $distance
+     * @param string $time_value The time to compare against (e.g., '03:45:00').
+     * @param string $time_column The DB column to target (default: 'chip_time').
+     * @param string|null $gender Optional gender filter.
+     * @return int The calculated rank (Count + 1).
+     */
+    public static function get_calculated_rank($event_id, $distance, $time_value, $time_column = 'chip_time', $gender = null)
+    {
+        global $wpdb;
+        $table_results = $wpdb->prefix . 'race_results';
+
+        // Clean inputs
+        $clean_dist = str_replace(' ', '', $distance);
+        $params = [$event_id, $clean_dist, $time_value];
+
+        // Base SQL: Count runners faster than this time
+        $sql = "SELECT COUNT(*) FROM $table_results 
+                WHERE event_id = %d 
+                AND REPLACE(distance, ' ', '') = %s 
+                AND $time_column != '' 
+                AND $time_column < %s"; // String comparison works for HH:MM:SS
+
+        // Gender Filter
+        if ($gender) {
+            $clean_gender = strtolower($gender);
+            if ($clean_gender === 'm' || $clean_gender === 'male') {
+                $sql .= " AND LOWER(gender) IN ('m', 'male')";
+            } elseif ($clean_gender === 'f' || $clean_gender === 'female') {
+                $sql .= " AND LOWER(gender) IN ('f', 'female')";
+            }
+        }
+
+        $faster_count = $wpdb->get_var($wpdb->prepare($sql, ...$params));
+
+        // Rank is (Runners Faster) + 1
+        return (int) $faster_count + 1;
     }
 }

@@ -62,5 +62,8 @@ class WPRR_Elementor_Addon
         $widgets_manager->register(new \WPRR_Race_Winners_Widget());
         $widgets_manager->register(new \WPRR_Event_Header_Widget());
         $widgets_manager->register(new \WPRR_Full_Results_Table_Widget());
+
+        require_once(__DIR__ . '/widgets/class-wprr-participant-analysis-widget.php');
+        $widgets_manager->register(new \WPRR_Participant_Analysis_Widget());
     }
 }
