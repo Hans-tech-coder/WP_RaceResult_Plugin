@@ -422,4 +422,25 @@ class WPRR_DB
         // Rank is (Runners Faster) + 1
         return (int) $faster_count + 1;
     }
+
+    /**
+     * Get all gun and chip times for a category to build histograms.
+     *
+     * @param int $event_id
+     * @param string $distance
+     * @return array Array of objects with gun_time and chip_time.
+     */
+    public static function get_all_race_times($event_id, $distance)
+    {
+        global $wpdb;
+        $table_results = $wpdb->prefix . 'race_results';
+        $clean_dist = str_replace(' ', '', $distance);
+
+        $sql = "SELECT gun_time, chip_time FROM $table_results 
+                WHERE event_id = %d 
+                AND REPLACE(distance, ' ', '') = %s
+                AND gun_time != '' AND chip_time != ''";
+
+        return $wpdb->get_results($wpdb->prepare($sql, $event_id, $clean_dist));
+    }
 }
