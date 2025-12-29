@@ -256,6 +256,24 @@ class WPRR_Race_Winners_Widget extends Widget_Base
         );
 
         $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name' => 'card_title_typography',
+                'label' => 'Title Typography',
+                'selector' => '{{WRAPPER}} .wprr-winner-card h4',
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name' => 'card_list_typography',
+                'label' => 'List Typography',
+                'selector' => '{{WRAPPER}} .wprr-winners-list li, {{WRAPPER}} .wprr-winners-list li span',
+            ]
+        );
+
+        $this->add_group_control(
             Group_Control_Box_Shadow::get_type(),
             [
                 'name' => 'card_box_shadow',
@@ -372,6 +390,25 @@ class WPRR_Race_Winners_Widget extends Widget_Base
             ]
         );
 
+        $this->add_responsive_control(
+            'button_padding',
+            [
+                'label' => 'Padding',
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-view-more-btn' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+                'default' => [
+                    'top' => 10,
+                    'right' => 20,
+                    'bottom' => 10,
+                    'left' => 20,
+                    'unit' => 'px',
+                ],
+            ]
+        );
+
         $this->add_control(
             'button_border_radius',
             [
@@ -412,7 +449,7 @@ class WPRR_Race_Winners_Widget extends Widget_Base
         if ($event) {
             $event_id = absint($event->id);
             $event_name = $event->event_name;
-            
+
             // Step 2: Dynamic Mode - Get all distances from event
             if (!empty($event->distance_categories)) {
                 $distances = array_map('trim', explode(',', $event->distance_categories));
@@ -426,7 +463,7 @@ class WPRR_Race_Winners_Widget extends Widget_Base
             if ($event_id) {
                 $event = WPRR_DB::get_event_by_id($event_id);
             }
-            
+
             if (empty($event_id) || !$event) {
                 if (\Elementor\Plugin::$instance->editor->is_edit_mode()) {
                     echo '<div style="padding: 20px; background: #eee; text-align: center;">Please select an Event to display winners.</div>';
@@ -441,18 +478,18 @@ class WPRR_Race_Winners_Widget extends Widget_Base
                 }
                 return;
             }
-            
+
             // Use single distance as array for loop
             $distances = [$distance];
         }
 
         // Sort distances in descending order (longest to shortest)
         if (count($distances) > 1) {
-            usort($distances, function($a, $b) {
+            usort($distances, function ($a, $b) {
                 // Remove non-numeric characters (except decimal points) to get raw number
                 $val_a = (float) filter_var($a, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
                 $val_b = (float) filter_var($b, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-                
+
                 // Sort Descending (Longest to Shortest)
                 return ($val_a < $val_b) ? 1 : -1;
             });
@@ -510,7 +547,48 @@ class WPRR_Race_Winners_Widget extends Widget_Base
             }
 
             ?>
-            <div class="wprr-distance-section wprr-winners-container" style="border: 1px solid #eee; padding: 20px; margin-bottom: 30px;">
+            <style>
+                /* Grid Layout */
+                .wprr-winners-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                }
+
+                /* Header Layout */
+                .wprr-winners-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                }
+
+                /* Mobile Responsive Overrides */
+                @media (max-width: 767px) {
+
+                    /* Stack Cards */
+                    .wprr-winners-grid {
+                        grid-template-columns: 1fr !important;
+                    }
+
+                    /* Center Header & Stack Button */
+                    .wprr-winners-header {
+                        flex-direction: column;
+                        gap: 15px;
+                        text-align: center;
+                        justify-content: center;
+                    }
+
+                    /* Ensure button doesn't stretch weirdly */
+                    .wprr-view-results-btn {
+                        display: inline-block;
+                        width: auto;
+                    }
+                }
+            </style>
+
+            <div class="wprr-distance-section wprr-winners-container"
+                style="border: 1px solid #eee; padding: 20px; margin-bottom: 30px;">
                 <!-- DATA SOURCE: DECLARED WINNERS
                      DECLARED MALE: <?php echo $declared_male; ?> (Podium: <?php echo count($podium_male); ?>)
                      REMAINING MALE: <?php echo $remaining_male; ?>
@@ -519,26 +597,24 @@ class WPRR_Race_Winners_Widget extends Widget_Base
                 -->
 
                 <!-- Header -->
-                <div class="wprr-winners-header"
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="wprr-winners-header">
                     <h3 style="margin: 0;"><?php echo esc_html($distance); ?> Winners</h3>
                     <?php
-                        $button_key = 'btn_' . $loop_index;
-                        $this->remove_render_attribute($button_key);
-                        $this->add_render_attribute($button_key, 'href', $button_url);
-                        $this->add_render_attribute($button_key, 'class', 'wprr-view-results-btn');
-                        $this->add_render_attribute($button_key, 'style', 'text-decoration: none; font-weight: bold;');
-                        
-                        echo '<a ' . $this->get_render_attribute_string($button_key) . '>View ' . esc_html($distance) . ' Results &rarr;</a>';
+                    $button_key = 'btn_' . $loop_index;
+                    $this->remove_render_attribute($button_key);
+                    $this->add_render_attribute($button_key, 'href', $button_url);
+                    $this->add_render_attribute($button_key, 'class', 'wprr-view-results-btn');
+                    $this->add_render_attribute($button_key, 'style', 'text-decoration: none; font-weight: bold;');
+
+                    echo '<a ' . $this->get_render_attribute_string($button_key) . '>View ' . esc_html($distance) . ' Results &rarr;</a>';
                     ?>
                 </div>
 
                 <!-- Cards Grid -->
-                <div class="wprr-winners-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="wprr-winners-grid">
 
                     <!-- Male Card -->
-                    <div class="wprr-winner-card"
-                        style="background: #f9f9f9; padding: 20px; border-radius: 8px; display: flex; flex-direction: column;">
+                    <div class="wprr-winner-card" style="display: flex; flex-direction: column;">
                         <h4 style="margin-top: 0; margin-bottom: 15px;"><?php echo esc_html($distance); ?> - Male</h4>
 
                         <?php if ($podium_male): ?>
@@ -565,15 +641,14 @@ class WPRR_Race_Winners_Widget extends Widget_Base
                         <?php if ($remaining_male > 0): ?>
                             <a href="javascript:void(0);" class="wprr-view-more-btn"
                                 data-wprr-modal="<?php echo esc_attr($modal_id_male); ?>"
-                                style="margin-top: auto; display: block; text-align: center; padding: 10px; background: #333; color: #fff; text-decoration: none; border-radius: 4px;">
+                                style="margin-top: auto; display: block; text-align: center; text-decoration: none;">
                                 <?php echo sprintf('View %d More Winners', $remaining_male); ?>
                             </a>
                         <?php endif; ?>
                     </div>
 
                     <!-- Female Card -->
-                    <div class="wprr-winner-card"
-                        style="background: #f9f9f9; padding: 20px; border-radius: 8px; display: flex; flex-direction: column;">
+                    <div class="wprr-winner-card" style="display: flex; flex-direction: column;">
                         <h4 style="margin-top: 0; margin-bottom: 15px;"><?php echo esc_html($distance); ?> - Female</h4>
 
                         <?php if ($podium_female): ?>
@@ -600,7 +675,7 @@ class WPRR_Race_Winners_Widget extends Widget_Base
                         <?php if ($remaining_female > 0): ?>
                             <a href="javascript:void(0);" class="wprr-view-more-btn"
                                 data-wprr-modal="<?php echo esc_attr($modal_id_female); ?>"
-                                style="margin-top: auto; display: block; text-align: center; padding: 10px; background: #333; color: #fff; text-decoration: none; border-radius: 4px;">
+                                style="margin-top: auto; display: block; text-align: center; text-decoration: none;">
                                 <?php echo sprintf('View %d More Winners', $remaining_female); ?>
                             </a>
                         <?php endif; ?>
