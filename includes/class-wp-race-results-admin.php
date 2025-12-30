@@ -95,13 +95,14 @@ class WP_Race_Results_Admin
     public function enqueue_scripts($hook)
     {
 
-        // Only enqueue on our specific plugin page
-        if ($this->events_page_hook !== $hook) {
+        // Only enqueue on our specific plugin pages
+        if ($this->events_page_hook !== $hook && strpos($hook, 'wp_race_results') === false) {
             return;
         }
 
         // Ensure the media uploader scripts are loaded.
         wp_enqueue_media();
+        wp_enqueue_style('wp-color-picker');
 
         // Use plugin_dir_url to get the URL relative to this file's directory.
         // We go up one level (../) to get to the plugin root, then into assets/js.
@@ -109,7 +110,7 @@ class WP_Race_Results_Admin
         $script_path = plugin_dir_path(__FILE__) . '../assets/js/wp-race-results-admin.js';
         $version = file_exists($script_path) ? filemtime($script_path) : $this->version;
 
-        wp_enqueue_script($this->plugin_name, $script_url, array('jquery'), $version, false);
+        wp_enqueue_script($this->plugin_name, $script_url, array('jquery', 'wp-color-picker'), $version, false);
 
     }
 
@@ -135,6 +136,8 @@ class WP_Race_Results_Admin
     {
         register_setting('wprr_settings_group', 'wprr_master_page_id', ['type' => 'integer', 'sanitize_callback' => 'absint']);
         register_setting('wprr_settings_group', 'wprr_permalink_base', ['type' => 'string', 'sanitize_callback' => 'sanitize_title']);
+        register_setting('wprr_settings_group', 'wprr_modal_header_bg');
+        register_setting('wprr_settings_group', 'wprr_modal_text_color');
 
         // When settings are saved, flush rewrite rules
         if (isset($_GET['settings-updated']) && $_GET['settings-updated']) {
@@ -1093,6 +1096,26 @@ class WP_Race_Results_Admin
                                 class="regular-text" />
                             <p class="description">The base slug for your race results URLs. Example:
                                 /<strong>results</strong>/event-name/</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <h3>Modal Pop-up Appearance</h3>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row"><label>Header Background Color</label></th>
+                        <td>
+                            <input type="text" name="wprr_modal_header_bg"
+                                value="<?php echo esc_attr(get_option('wprr_modal_header_bg', '#7A2e66')); ?>"
+                                class="wprr-color-field" />
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label>Header Text Color</label></th>
+                        <td>
+                            <input type="text" name="wprr_modal_text_color"
+                                value="<?php echo esc_attr(get_option('wprr_modal_text_color', '#ffffff')); ?>"
+                                class="wprr-color-field" />
                         </td>
                     </tr>
                 </table>

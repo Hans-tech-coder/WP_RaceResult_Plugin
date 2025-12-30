@@ -65,4 +65,7 @@ jQuery(document).ready(function ($) {
 		var isChecked = $(this).prop('checked');
 		$('input[name="result_ids[]"]').prop('checked', isChecked);
 	});
+
+	// Initialize Color Picker
+	$('.wprr-color-field').wpColorPicker();
 });

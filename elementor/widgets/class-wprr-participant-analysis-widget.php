@@ -276,6 +276,21 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 transform: translateY(-5px);
             }
 
+            /* Responsive Header Layout */
+            .wprr-header-left-group {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                /* Desktop: Align Left */
+            }
+
+            .wprr-participant-info {
+                text-align: left;
+                /* Desktop: Align Left */
+            }
+
             /* New Responsive Layout Classes */
             .wprr-perf-layout {
                 display: flex;
@@ -297,7 +312,7 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 display: flex;
                 flex-direction: column;
                 gap: 30px;
-                border-left: 2 solid #f0f0f0;
+                border-left: 2px solid #f0f0f0;
                 padding-left: 40px;
             }
 
@@ -363,6 +378,19 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                 .wprr-stat-value {
                     font-size: 34px;
                 }
+
+                /* Mobile Header Adjustments */
+                .wprr-header-left-group {
+                    justify-content: center;
+                    /* Center on Mobile */
+                    width: 100%;
+                }
+
+                .wprr-participant-info {
+                    text-align: center;
+                    /* Center on Mobile */
+                    width: 100%;
+                }
             }
         </style>
 
@@ -371,7 +399,7 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
             <div class="wprr-analysis-card"
                 style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px; padding: 30px; margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; background: #fff;">
 
-                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center;">
+                <div class="wprr-header-left-group">
                     <div class="wprr-analysis-rank-wrapper" style="text-align: center; margin-right: 10px;">
                         <div class="wprr-rank-circle"
                             style="background: #333; color: #fff; width: 80px; height: 80px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin: 0 auto;">
@@ -385,8 +413,9 @@ class WPRR_Participant_Analysis_Widget extends \Elementor\Widget_Base
                         </div>
                     </div>
 
-                    <div style="text-align: center;">
-                        <h2 style="margin: 0; font-size: 28px;"><?php echo esc_html($result->full_name); ?></h2>
+                    <div class="wprr-participant-info">
+                        <h2 style="margin: 0; font-size: 28px; line-height: 1.2;"><?php echo esc_html($result->full_name); ?>
+                        </h2>
                         <div style="opacity: 0.7; font-size: 16px; margin-top: 5px;">
                             Bib: <strong><?php echo esc_html($result->bib_number); ?></strong> &nbsp;|&nbsp;
                             Distance: <strong><?php echo esc_html($result->distance); ?></strong>

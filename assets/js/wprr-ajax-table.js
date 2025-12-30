@@ -20,18 +20,21 @@ jQuery(document).ready(function ($) {
         e.preventDefault();
         const href = $(this).attr('href');
         let page = 1;
-        
+
         if (href) {
             // Try to extract wprr_page from URL
             const urlParams = new URLSearchParams(href.split('?')[1]);
             if (urlParams.has('wprr_page')) {
                 page = urlParams.get('wprr_page');
             } else if (href.includes('/page/')) {
-                 // Support for /page/2/ permalink structure if used
-                 const match = href.match(/\/page\/(\d+)/);
-                 if (match) page = match[1];
+                // Support for /page/2/ permalink structure if used
+                const match = href.match(/\/page\/(\d+)/);
+                if (match) page = match[1];
             }
         }
+
+        // OPTIONAL: Only scroll on pagination clicks (usually expected), 
+        // but for now, we remove it entirely as requested.
         fetchResults(page);
     });
 
@@ -44,7 +47,7 @@ jQuery(document).ready(function ($) {
         const distance = distanceSelect.val();
         const search = filterForm.find('input[name="search"]').val();
         const gender = filterForm.find('select[name="gender"]').val();
-        const eventId = filterForm.find('input[name="event_id"]').val() || ''; 
+        const eventId = filterForm.find('input[name="event_id"]').val() || '';
         const settings = container.data('settings');
 
         $.ajax({
@@ -64,16 +67,14 @@ jQuery(document).ready(function ($) {
                 if (response.success) {
                     // Update Content
                     container.html(response.data.html);
-                    
+
                     // Update URL History
                     if (response.data.new_url) {
-                        window.history.pushState({path: response.data.new_url}, '', response.data.new_url);
+                        window.history.pushState({ path: response.data.new_url }, '', response.data.new_url);
                     }
 
-                    // Smooth Scroll to Table Top
-                    $('html, body').animate({
-                        scrollTop: $(".wprr-full-results-container").offset().top - 100
-                    }, 400);
+                    // REMOVED: Smooth Scroll to Table Top
+                    // The animation block was causing the screen jump/frustration.
                 } else {
                     console.error('AJAX Error:', response);
                 }
@@ -81,7 +82,7 @@ jQuery(document).ready(function ($) {
             error: function (xhr, status, error) {
                 console.error('AJAX Fail:', error);
             },
-            complete: function() {
+            complete: function () {
                 container.css('opacity', '1');
                 container.css('pointer-events', 'auto');
             }
