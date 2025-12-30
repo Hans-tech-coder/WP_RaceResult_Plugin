@@ -30,13 +30,21 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
         return ['wp-race-results'];
     }
 
+    /**
+     * Force load Font Awesome assets.
+     */
+    public function get_style_depends()
+    {
+        return ['elementor-icons-fa-solid', 'elementor-icons-fa-regular', 'elementor-icons-fa-brands'];
+    }
+
     protected function _register_controls()
     {
         // --- Style Tab: Banner Container ---
         $this->start_controls_section(
             'section_style_banner',
             [
-                'label' => 'Banner Container',
+                'label' => 'Banner Background',
                 'tab' => \Elementor\Controls_Manager::TAB_STYLE,
             ]
         );
@@ -68,49 +76,181 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
         );
 
         $this->add_control(
+            'banner_bg_position',
+            [
+                'label' => 'Position',
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'center center',
+                'options' => [
+                    'default' => 'Default',
+                    'top left' => 'Top Left',
+                    'top center' => 'Top Center',
+                    'top right' => 'Top Right',
+                    'center left' => 'Center Left',
+                    'center center' => 'Center Center',
+                    'center right' => 'Center Right',
+                    'bottom left' => 'Bottom Left',
+                    'bottom center' => 'Bottom Center',
+                    'bottom right' => 'Bottom Right',
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-event-header-banner' => 'background-position: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'banner_bg_attachment',
+            [
+                'label' => 'Attachment',
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'scroll',
+                'options' => [
+                    'default' => 'Default',
+                    'scroll' => 'Scroll',
+                    'fixed' => 'Fixed',
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-event-header-banner' => 'background-attachment: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'banner_bg_repeat',
+            [
+                'label' => 'Repeat',
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'no-repeat',
+                'options' => [
+                    'default' => 'Default',
+                    'no-repeat' => 'No-repeat',
+                    'repeat' => 'Repeat',
+                    'repeat-x' => 'Repeat-x',
+                    'repeat-y' => 'Repeat-y',
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-event-header-banner' => 'background-repeat: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'banner_bg_size',
+            [
+                'label' => 'Display Size',
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'cover',
+                'options' => [
+                    'default' => 'Default',
+                    'auto' => 'Auto',
+                    'cover' => 'Cover',
+                    'contain' => 'Contain',
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-event-header-banner' => 'background-size: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
             'banner_overlay_color',
             [
-                'label' => 'Overlay Color',
+                'label' => 'Background Overlay',
                 'type' => \Elementor\Controls_Manager::COLOR,
-                'default' => 'rgba(0, 0, 0, 0.3)',
+                'default' => 'rgba(0, 0, 0, 0)',
                 'selectors' => [
                     '{{WRAPPER}} .wprr-event-header-overlay' => 'background-color: {{VALUE}};',
                 ],
             ]
         );
 
-        $this->add_responsive_control(
-            'banner_content_alignment',
+        $this->end_controls_section();
+
+        // --- Style Tab: Content Box (The Card) ---
+        $this->start_controls_section(
+            'section_style_content_box',
             [
-                'label' => 'Content Alignment',
-                'type' => \Elementor\Controls_Manager::CHOOSE,
-                'options' => [
-                    'center' => [
-                        'title' => 'Center',
-                        'icon' => 'eicon-text-align-center',
-                    ],
-                    'flex-start' => [
-                        'title' => 'Left',
-                        'icon' => 'eicon-text-align-left',
-                    ],
-                    'flex-end' => [
-                        'title' => 'Bottom Left',
-                        'icon' => 'eicon-text-align-left',
-                    ],
-                ],
-                'default' => 'center',
-                'prefix_class' => 'wprr-header-align-',
+                'label' => 'Content Box',
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
             ]
         );
 
         $this->add_responsive_control(
-            'banner_padding',
+            'content_box_width',
+            [
+                'label' => 'Max Width',
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => ['px', '%'],
+                'default' => [
+                    'unit' => '%',
+                    'size' => 80,
+                ],
+                'range' => [
+                    'px' => [
+                        'min' => 200,
+                        'max' => 1200,
+                    ],
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-header-content-box' => 'max-width: {{SIZE}}{{UNIT}}; width: 100%;',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'content_box_bg_color',
+            [
+                'label' => 'Background Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => 'rgba(0, 0, 0, 0.6)',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-header-content-box' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'content_box_blur',
+            [
+                'label' => 'Background Blur',
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'default' => [
+                    'size' => 0,
+                    'unit' => 'px',
+                ],
+                'range' => [
+                    'px' => [
+                        'min' => 0,
+                        'max' => 50,
+                    ],
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-header-content-box' => '-webkit-backdrop-filter: blur({{SIZE}}{{UNIT}}); backdrop-filter: blur({{SIZE}}{{UNIT}});',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'content_box_padding',
             [
                 'label' => 'Padding',
                 'type' => \Elementor\Controls_Manager::DIMENSIONS,
                 'size_units' => ['px', '%', 'em'],
                 'selectors' => [
-                    '{{WRAPPER}} .wprr-event-header-content' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                    '{{WRAPPER}} .wprr-header-content-box' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'content_box_border_radius',
+            [
+                'label' => 'Border Radius',
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-header-content-box' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
                 ],
             ]
         );
@@ -129,25 +269,14 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
         $this->add_responsive_control(
             'logo_max_width',
             [
-                'label' => 'Max Width',
+                'label' => 'Width',
                 'type' => \Elementor\Controls_Manager::SLIDER,
                 'default' => [
-                    'size' => 200,
+                    'size' => 120,
                     'unit' => 'px',
                 ],
-                'range' => [
-                    'px' => [
-                        'min' => 50,
-                        'max' => 800,
-                    ],
-                    '%' => [
-                        'min' => 10,
-                        'max' => 100,
-                    ],
-                ],
-                'size_units' => ['px', '%'],
                 'selectors' => [
-                    '{{WRAPPER}} .wprr-event-header-logo img' => 'max-width: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .wprr-event-header-logo img' => 'width: {{SIZE}}{{UNIT}}; height: auto;',
                 ],
             ]
         );
@@ -176,11 +305,97 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
             ]
         );
 
-        $this->add_group_control(
-            \Elementor\Group_Control_Box_Shadow::get_type(),
+        $this->end_controls_section();
+
+        // --- Style Tab: Typography (Title & Meta) ---
+        $this->start_controls_section(
+            'section_style_typography',
             [
-                'name' => 'logo_box_shadow',
-                'selector' => '{{WRAPPER}} .wprr-event-header-logo img',
+                'label' => 'Title & Details',
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'title_heading',
+            [
+                'label' => 'Event Title',
+                'type' => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'title_color',
+            [
+                'label' => 'Title Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => '#ffffff',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-header-title' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'title_typography',
+                'selector' => '{{WRAPPER}} .wprr-header-title',
+            ]
+        );
+
+        $this->add_control(
+            'meta_heading',
+            [
+                'label' => 'Meta Details (Date/Loc)',
+                'type' => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'meta_color',
+            [
+                'label' => 'Text Color',
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'default' => '#e0e0e0',
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-header-meta' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-header-meta i' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-header-meta svg' => 'fill: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'meta_typography',
+                'selector' => '{{WRAPPER}} .wprr-header-meta',
+            ]
+        );
+
+        // --- NEW: Icon Size Control ---
+        $this->add_responsive_control(
+            'meta_icon_size',
+            [
+                'label' => 'Icon Size',
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'default' => [
+                    'size' => 16,
+                    'unit' => 'px',
+                ],
+                'range' => [
+                    'px' => [
+                        'min' => 10,
+                        'max' => 100,
+                    ],
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .wprr-header-meta i' => 'font-size: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .wprr-header-meta svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+                ],
             ]
         );
 
@@ -201,18 +416,13 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
                 'label' => 'Icon Size',
                 'type' => \Elementor\Controls_Manager::SLIDER,
                 'default' => [
-                    'size' => 24,
+                    'size' => 20,
                     'unit' => 'px',
                 ],
-                'range' => [
-                    'px' => [
-                        'min' => 12,
-                        'max' => 100,
-                    ],
-                ],
-                'size_units' => ['px'],
                 'selectors' => [
-                    '{{WRAPPER}} .wprr-event-header-social a' => 'font-size: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .wprr-header-social a' => 'font-size: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .wprr-header-social i' => 'font-size: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .wprr-header-social svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
                 ],
             ]
         );
@@ -224,7 +434,9 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#ffffff',
                 'selectors' => [
-                    '{{WRAPPER}} .wprr-event-header-social a' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-header-social a' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-header-social i' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-header-social svg' => 'fill: {{VALUE}};',
                 ],
             ]
         );
@@ -234,9 +446,11 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
             [
                 'label' => 'Icon Hover Color',
                 'type' => \Elementor\Controls_Manager::COLOR,
-                'default' => '#0073aa',
+                'default' => '#cccccc',
                 'selectors' => [
-                    '{{WRAPPER}} .wprr-event-header-social a:hover' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-header-social a:hover' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-header-social a:hover i' => 'color: {{VALUE}};',
+                    '{{WRAPPER}} .wprr-header-social a:hover svg' => 'fill: {{VALUE}};',
                 ],
             ]
         );
@@ -244,33 +458,14 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
         $this->add_responsive_control(
             'social_icon_spacing',
             [
-                'label' => 'Spacing Between Icons',
+                'label' => 'Gap',
                 'type' => \Elementor\Controls_Manager::SLIDER,
                 'default' => [
                     'size' => 15,
                     'unit' => 'px',
                 ],
-                'range' => [
-                    'px' => [
-                        'min' => 0,
-                        'max' => 50,
-                    ],
-                ],
-                'size_units' => ['px'],
                 'selectors' => [
-                    '{{WRAPPER}} .wprr-event-header-social a:not(:last-child)' => 'margin-right: {{SIZE}}{{UNIT}};',
-                ],
-            ]
-        );
-
-        $this->add_responsive_control(
-            'social_icon_margin',
-            [
-                'label' => 'Margin',
-                'type' => \Elementor\Controls_Manager::DIMENSIONS,
-                'size_units' => ['px', '%', 'em'],
-                'selectors' => [
-                    '{{WRAPPER}} .wprr-event-header-social' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                    '{{WRAPPER}} .wprr-header-social' => 'gap: {{SIZE}}{{UNIT}};',
                 ],
             ]
         );
@@ -283,7 +478,7 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
         $settings = $this->get_settings_for_display();
         $event = null;
 
-        // Detection Logic: First check query_var, then GET parameter
+        // Detection Logic
         $event_slug = get_query_var('event_slug');
         if (!empty($event_slug)) {
             $event = WPRR_DB::get_event_by_slug($event_slug);
@@ -291,75 +486,119 @@ class WPRR_Event_Header_Widget extends \Elementor\Widget_Base
             $event = WPRR_DB::get_event_by_id(absint($_GET['event_id']));
         }
 
-        // Show placeholder in editor if no event found
+        // Editor Placeholder
         if (!$event) {
             if (\Elementor\Plugin::$instance->editor->is_edit_mode()) {
-                echo '<div class="wprr-event-header-placeholder" style="padding: 40px; text-align: center; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 4px;">';
-                echo '<p style="margin: 0; color: #666;">Event Dynamic Header</p>';
-                echo '<p style="margin: 10px 0 0; font-size: 12px; color: #999;">No event found. This widget will display event branding when an event is selected via slug or event_id parameter.</p>';
-                echo '</div>';
+                echo '<div style="padding: 40px; text-align: center; background: #eee;">';
+                echo '<p><strong>Event Header Widget</strong></p>';
+                echo '<p>No event detected. Previewing with placeholder data.</p>';
+                // Mock Object for Preview
+                $event = new stdClass();
+                $event->event_name = 'Sample Event Name';
+                $event->event_date = date('Y-m-d');
+                $event->location = 'Sample City, Country';
+                $event->event_logo = 'https://via.placeholder.com/150';
+                $event->banner_image = '';
+                $event->social_media_links = '';
+            } else {
+                return;
             }
-            return;
         }
 
-        // Parse social media links
-        $social_links = [];
-        if (!empty($event->social_media_links)) {
-            $decoded = json_decode($event->social_media_links, true);
-            if (is_array($decoded)) {
-                $social_links = $decoded;
-            }
-        }
-
-        // Banner image URL
+        // Data Prep
         $banner_url = !empty($event->banner_image) ? esc_url($event->banner_image) : '';
+        // NOTE: We do NOT add background-size/position here anymore.
+        // It is handled by CSS Selectors in _register_controls.
         $banner_style = $banner_url ? 'background-image: url(' . $banner_url . ');' : 'background-color: #333;';
 
-        // Get alignment class
-        $alignment = isset($settings['banner_content_alignment']) ? $settings['banner_content_alignment'] : 'center';
-        $alignment_class = 'wprr-header-align-' . esc_attr($alignment);
+        $social_links = !empty($event->social_media_links) ? json_decode($event->social_media_links, true) : [];
 
-        // Render banner container with overlay
-        $overlay_color = isset($settings['banner_overlay_color']) ? $settings['banner_overlay_color'] : 'rgba(0, 0, 0, 0.3)';
-        echo '<div class="wprr-event-header-banner" style="' . $banner_style . ' background-size: cover; background-position: center; position: relative; display: flex;">';
-        echo '<div class="wprr-event-header-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ' . esc_attr($overlay_color) . '; z-index: 1;"></div>';
-        
-        // Content container
-        echo '<div class="wprr-event-header-content ' . $alignment_class . '" style="position: relative; z-index: 2; width: 100%; display: flex; flex-direction: column; justify-content: ' . esc_attr($alignment === 'flex-end' ? 'flex-end' : ($alignment === 'flex-start' ? 'flex-start' : 'center')) . '; align-items: ' . esc_attr($alignment === 'flex-end' ? 'flex-start' : ($alignment === 'flex-start' ? 'flex-start' : 'center')) . ';">';
+        // Render
+        ?>
+        <div class="wprr-event-header-banner"
+            style="<?php echo $banner_style; ?> position: relative; display: flex; align-items: center; justify-content: center;">
+            <div class="wprr-event-header-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"></div>
 
-        // Logo
-        if (!empty($event->event_logo)) {
-            echo '<div class="wprr-event-header-logo">';
-            echo '<img src="' . esc_url($event->event_logo) . '" alt="' . esc_attr($event->event_name) . ' Logo" style="max-width: 100%; height: auto;">';
-            echo '</div>';
-        }
+            <div class="wprr-header-content-box"
+                style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center;">
 
-        // Social Media Links
-        if (!empty($social_links)) {
-            echo '<div class="wprr-event-header-social" style="display: flex; align-items: center;">';
-            
-            if (!empty($social_links['facebook'])) {
-                echo '<a href="' . esc_url($social_links['facebook']) . '" target="_blank" rel="noopener noreferrer" aria-label="Facebook">';
-                echo '<i class="fab fa-facebook"></i>';
-                echo '</a>';
-            }
-            
-            if (!empty($social_links['instagram'])) {
-                echo '<a href="' . esc_url($social_links['instagram']) . '" target="_blank" rel="noopener noreferrer" aria-label="Instagram">';
-                echo '<i class="fab fa-instagram"></i>';
-                echo '</a>';
-            }
-            
-            if (!empty($social_links['website'])) {
-                echo '<a href="' . esc_url($social_links['website']) . '" target="_blank" rel="noopener noreferrer" aria-label="Website">';
-                echo '<i class="fas fa-globe"></i>';
-                echo '</a>';
-            }
-            
-            echo '</div>';
-        }
+                <?php if (!empty($event->event_logo)): ?>
+                    <div class="wprr-event-header-logo">
+                        <img src="<?php echo esc_url($event->event_logo); ?>" alt="Event Logo">
+                    </div>
+                <?php endif; ?>
 
-        echo '</div>'; // .wprr-event-header-content
-        echo '</div>'; // .wprr-event-header-banner
+                <h1 class="wprr-header-title" style="margin: 0; padding: 0; line-height: 1.2;">
+                    <?php echo esc_html($event->event_name); ?>
+                </h1>
+
+                <div class="wprr-header-meta" style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;">
+                    <?php if (!empty($event->event_date)): ?>
+                        <div class="wprr-meta-item" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <?php
+                            \Elementor\Icons_Manager::render_icon(
+                                ['value' => 'far fa-calendar-alt', 'library' => 'fa-regular'],
+                                ['aria-hidden' => 'true']
+                            );
+                            ?>
+                            <?php echo date_i18n(get_option('date_format'), strtotime($event->event_date)); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($event->location)): ?>
+                        <div class="wprr-meta-item" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <?php
+                            \Elementor\Icons_Manager::render_icon(
+                                ['value' => 'fas fa-map-marker-alt', 'library' => 'fa-solid'],
+                                ['aria-hidden' => 'true']
+                            );
+                            ?>
+                            <?php echo esc_html($event->location); ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (!empty($social_links)): ?>
+                    <div class="wprr-header-social" style="display: flex; justify-content: center; margin-top: 15px;">
+
+                        <?php if (!empty($social_links['facebook'])): ?>
+                            <a href="<?php echo esc_url($social_links['facebook']); ?>" target="_blank">
+                                <?php
+                                \Elementor\Icons_Manager::render_icon(
+                                    ['value' => 'fab fa-facebook-square', 'library' => 'fa-brands'],
+                                    ['aria-hidden' => 'true']
+                                );
+                                ?>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if (!empty($social_links['instagram'])): ?>
+                            <a href="<?php echo esc_url($social_links['instagram']); ?>" target="_blank">
+                                <?php
+                                \Elementor\Icons_Manager::render_icon(
+                                    ['value' => 'fab fa-instagram', 'library' => 'fa-brands'],
+                                    ['aria-hidden' => 'true']
+                                );
+                                ?>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if (!empty($social_links['website'])): ?>
+                            <a href="<?php echo esc_url($social_links['website']); ?>" target="_blank">
+                                <?php
+                                \Elementor\Icons_Manager::render_icon(
+                                    ['value' => 'fas fa-globe', 'library' => 'fa-solid'],
+                                    ['aria-hidden' => 'true']
+                                );
+                                ?>
+                            </a>
+                        <?php endif; ?>
+
+                    </div>
+                <?php endif; ?>
+
+            </div>
+        </div>
+        <?php
     }
 }
